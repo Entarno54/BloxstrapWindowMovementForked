@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Drawing;
 using System.Numerics;
+using System.Drawing.Drawing2D;
 
 public struct Rect {
    public int Left { get; set; }
@@ -100,6 +101,11 @@ namespace Bloxstrap.Integrations
             SendMessage(_currentWindow, WM_SETTEXT, IntPtr.Zero, "Roblox");
         }
 
+        private List<System.Windows.Forms.Form> forms = new List<System.Windows.Forms.Form>();
+        public void removeWindows() {
+            // TODO: Clear the list above!!
+        }
+
         public void OnMessage(Message message) {
             const string LOG_IDENT = "WindowController::OnMessage";
 
@@ -127,6 +133,55 @@ namespace Bloxstrap.Integrations
                     resetWindow();
                     break;
                 case "MakeWindow": {
+                    if (!App.Settings.Prop.CanGameMoveWindow) { break; }
+                    WindowMessage? windowData;
+
+                    try
+                    {
+                        windowData = message.Data.Deserialize<WindowMessage>();
+                    }
+                    catch (Exception)
+                    {
+                        App.Logger.WriteLine(LOG_IDENT, "Failed to parse message! (JSON deserialization threw an exception)");
+                        return;
+                    }
+
+                    if (windowData is null)
+                    {
+                        App.Logger.WriteLine(LOG_IDENT, "Failed to parse message! (JSON deserialization returned null)");
+                        return;
+                    }
+
+                    Task.Run(() => {
+                        System.Windows.Forms.Form form = new System.Windows.Forms.Form();
+                        form.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
+                        form.ShowInTaskbar = false;
+                        form.Icon = null;
+
+                        form.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
+                        form.Location = new System.Drawing.Point(0, 0);
+
+                        System.Windows.Forms.PictureBox pictureBox = new System.Windows.Forms.PictureBox();
+                        pictureBox.Dock = System.Windows.Forms.DockStyle.Fill;
+                        pictureBox.Load("https://cdn.discordapp.com/attachments/1223641810530730048/1292595927093088337/laughnmi.gif?ex=67044f44&is=6702fdc4&hm=e14ba362702360813bd5dded3b1c40558c756df195decede9590207bc7b502df&");
+                        pictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+
+                        Graphics gfxControl = pictureBox.CreateGraphics();
+                        gfxControl.InterpolationMode = InterpolationMode.NearestNeighbor;
+                        gfxControl.PixelOffsetMode = PixelOffsetMode.Half;
+
+                        form.Controls.Add(pictureBox);
+
+                        form.ShowDialog();
+                        forms.Add(form);
+
+                        Message msg = new Message();
+                        msg.Data = message.Data;
+                        msg.Command = "SetWindow";
+
+                        OnMessage(msg);
+                    });
+
                     break;
                 }
                 case "SetWindow": {
@@ -153,6 +208,11 @@ namespace Bloxstrap.Integrations
                     if (windowData.Reset == true) {
                         resetWindow();
                         return;
+                    }
+
+                    System.Windows.Forms.Form? targetForm = null;
+                    if (windowData.WindowID is not null && (int) windowData.WindowID >= 0) {
+                        targetForm = forms.ElementAt(new System.Index((int) windowData.WindowID));
                     }
 
                     if (windowData.ScaleWidth is not null) {
@@ -183,7 +243,14 @@ namespace Bloxstrap.Integrations
                         _lastHeight = (int) (windowData.Height * scaleY);
                     }
 
-                    MoveWindow(_currentWindow,_lastX,_lastY,_lastWidth,_lastHeight,false);
+                    if (targetForm is not null) {
+                        // TODO: Fix these?
+                        /*targetForm.Location = new System.Drawing.Point(_lastX, _lastY);
+                        targetForm.Size = new System.Drawing.Size(_lastWidth, _lastHeight);*/
+                    } else {
+                        MoveWindow(_currentWindow,_lastX,_lastY,_lastWidth,_lastHeight,false);
+                    }
+
                     //App.Logger.WriteLine(LOG_IDENT, $"Updated Window Properties");
                     break;
                 }
@@ -304,6 +371,8 @@ namespace Bloxstrap.Integrations
         public void Dispose()
         {
             resetWindow();
+            removeWindows();
+
             GC.SuppressFinalize(this);
         }
 
@@ -329,7 +398,6 @@ namespace Bloxstrap.Integrations
 
         [DllImport("user32.dll")]
         public static extern bool GetWindowRect(IntPtr hwnd, ref Rect rectangle);
-
         
         [DllImport("user32.dll")]
         static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
