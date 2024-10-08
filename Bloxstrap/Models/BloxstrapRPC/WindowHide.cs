@@ -1,6 +1,6 @@
 ﻿namespace Bloxstrap.Models.BloxstrapRPC;
 
-public class WindowMessage
+public class WindowHide
 {
     [JsonPropertyName("hide")]
     public bool? Hide { get; set; }
