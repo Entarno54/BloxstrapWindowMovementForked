@@ -42,6 +42,9 @@ namespace Bloxstrap.Integrations
         private int _startingWidth = 0;
         private int _startingHeight = 0;
 
+        private const int SW_MAXIMIZE = 3;
+        private const int SW_MINIMIZE = 6;
+
         public WindowController(ActivityWatcher activityWatcher)
         {
             _activityWatcher = activityWatcher;
@@ -98,6 +101,8 @@ namespace Bloxstrap.Integrations
 
             MoveWindow(_currentWindow,_startingX,_startingY,_startingWidth,_startingHeight,false);
             SetWindowLong(_currentWindow, -20, 0x00000000);
+            ShowWindow(_currentWindow, SW_MAXIMIZE);
+
             SendMessage(_currentWindow, WM_SETTEXT, IntPtr.Zero, "Roblox");
         }
 
@@ -129,9 +134,37 @@ namespace Bloxstrap.Integrations
                     _activityWatcher.delay = 250;
                     break;
                 }
-                case "RestoreWindowState": case "RestoreWindow": case "ResetWindow":
+                case "RestoreWindowState": case "RestoreWindow": case "ResetWindow": {
                     resetWindow();
                     break;
+                }
+                case "ShowWindow": {
+                    WindowHide? windowData;
+
+                    try
+                    {
+                        windowData = message.Data.Deserialize<WindowHide>();
+                    }
+                    catch (Exception)
+                    {
+                        App.Logger.WriteLine(LOG_IDENT, "Failed to parse message! (JSON deserialization threw an exception)");
+                        return;
+                    }
+
+                    if (windowData is null)
+                    {
+                        App.Logger.WriteLine(LOG_IDENT, "Failed to parse message! (JSON deserialization returned null)");
+                        return;
+                    }
+
+                    bool hideWindow = false;
+                    if (windowData.Hide is not null) {
+                        _hideWindow = (bool) windowData.Hide;
+                    }
+
+                    ShowWindow(_currentWindow, SW_MAXIMIZE);
+                    break;
+                }
                 case "MakeWindow": {
                     if (!App.Settings.Prop.CanGameMoveWindow) { break; }
                     WindowMessage? windowData;
@@ -407,5 +440,9 @@ namespace Bloxstrap.Integrations
 
         [DllImport("user32.dll")]
         static extern bool SetLayeredWindowAttributes(IntPtr hwnd, uint crKey, byte bAlpha, uint dwFlags);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
     }
 }
