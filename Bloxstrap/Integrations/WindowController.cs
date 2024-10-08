@@ -157,7 +157,7 @@ namespace Bloxstrap.Integrations
                         return;
                     }
 
-                    bool hideWindow = false;
+                    bool _hideWindow = false;
                     if (windowData.Hide is not null) {
                         _hideWindow = (bool) windowData.Hide;
                     }
