@@ -82,7 +82,7 @@ public class Watcher : IDisposable
             if (App.Settings.Prop.UseDiscordRichPresence)
                 RichPresence = new(ActivityWatcher);
 
-            if (App.Settings.Prop.CanGameMoveWindow || App.Settings.Prop.CanGameSetWindowTitle) 
+            if (App.Settings.Prop.CanGameMoveWindow || App.Settings.Prop.CanGameSetWindowTitle || App.Settings.Prop.CanGameChangeColor) 
                 WindowController = new(ActivityWatcher);
         }
 

@@ -22,6 +22,7 @@ public class Settings
     public bool EnableActivityTracking { get; set; } = true;
     public bool UseDiscordRichPresence { get; set; } = true;
     public bool CanGameMoveWindow { get; set; } = true;
+    public bool CanGameChangeColor { get; set; } = true;
     public bool CanGameSetWindowTitle { get; set; } = true;
     public int  WindowLogReadFPS { get; set; } = 60;
     public bool HideRPCButtons { get; set; } = true;

@@ -2914,6 +2914,18 @@ namespace Bloxstrap.Resources {
             }
         }
 
+        public static string Menu_Integrations_GameColorControl_Title {
+            get {
+                return ResourceManager.GetString("Menu.Integrations.GameColorControl.Title", resourceCulture);
+            }
+        }
+
+        public static string Menu_Integrations_GameColorControl_Description {
+            get {
+                return ResourceManager.GetString("Menu.Integrations.GameColorControl.Description", resourceCulture);
+            }
+        }
+
         public static string Menu_Integrations_GameWindowControl_Title {
             get {
                 return ResourceManager.GetString("Menu.Integrations.GameWindowControl.Title", resourceCulture);

@@ -75,6 +75,7 @@ public class IntegrationsViewModel : NotifyPropertyChangedViewModel
                 DisableAppPatchEnabled = value;
                 DiscordActivityEnabled = value;
                 GameWindowControlEnabled = value;
+                GameWindowColorEnabled = value;
                 GameWindowTitleControlEnabled = value;
                 DiscordActivityJoinEnabled = value;
 
@@ -82,6 +83,7 @@ public class IntegrationsViewModel : NotifyPropertyChangedViewModel
                 OnPropertyChanged(nameof(DisableAppPatchEnabled));
                 OnPropertyChanged(nameof(DiscordActivityEnabled));
                 OnPropertyChanged(nameof(GameWindowControlEnabled));
+                OnPropertyChanged(nameof(GameWindowColorEnabled));
                 OnPropertyChanged(nameof(GameWindowTitleControlEnabled));
                 OnPropertyChanged(nameof(DiscordActivityJoinEnabled));
             }
@@ -115,6 +117,12 @@ public class IntegrationsViewModel : NotifyPropertyChangedViewModel
     {
         get => App.Settings.Prop.CanGameMoveWindow;
         set => App.Settings.Prop.CanGameMoveWindow = value;
+    }
+
+    public bool GameWindowColorEnabled
+    {
+        get => App.Settings.Prop.CanGameChangeColor;
+        set => App.Settings.Prop.CanGameChangeColor = value;
     }
 
     public int GameWindowLogFPSInterval

@@ -54,6 +54,8 @@ namespace Bloxstrap.Integrations
         private string _lastPopupTitle = "";
         private int? _messagePopup;
 
+        private Theme appTheme = Theme.Default;
+
         public WindowController(ActivityWatcher activityWatcher)
         {
             _activityWatcher = activityWatcher;
@@ -85,6 +87,13 @@ namespace Bloxstrap.Integrations
             _startingY = _lastY;
             _startingWidth = _lastWidth;
             _startingHeight = _lastHeight;
+
+            appTheme = ThemeEx.GetFinal(App.Settings.Prop.Theme);
+            if (App.Settings.Prop.CanGameChangeColor && appTheme == Theme.Dark)
+            {
+                _lastWindowCaptionColor = Convert.ToUInt32("1F1F1F", 16);
+                DwmSetWindowAttribute(_currentWindow, 35, ref _lastWindowCaptionColor, sizeof(int));
+            }
             
             //dpi awareness
             using (Graphics graphics = Graphics.FromHwnd(_currentWindow))
@@ -469,7 +478,7 @@ namespace Bloxstrap.Integrations
                     break;
                 }
                 case "SetWindowColor": {
-                    if (!App.Settings.Prop.CanGameMoveWindow) {return;}
+                    if (!App.Settings.Prop.CanGameChangeColor) {return;}
                     WindowColor? windowData;
 
                     try
@@ -489,7 +498,7 @@ namespace Bloxstrap.Integrations
                     }
 
                     if (windowData.Reset == true) {
-                        windowData.Caption = "FFFFFF";
+                        windowData.Caption = appTheme == Theme.Dark ? "1F1F1F" : "FFFFFF";
                         windowData.Border = "1F1F1F";
                         windowData.Reset = false;
                     }
