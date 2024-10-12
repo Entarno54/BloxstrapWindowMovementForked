@@ -7,6 +7,7 @@ namespace Bloxstrap.UI
     public class NotifyIconWrapper : IDisposable
     {
         // lol who needs properly structured mvvm and xaml when you have the absolute catastrophe that this is
+        // i dont want to do anything anymore after touching this, this sucks
 
         private bool _disposing = false;
 

@@ -45,6 +45,9 @@ namespace Bloxstrap.Integrations
         private const int SW_MAXIMIZE = 3;
         private const int SW_MINIMIZE = 6;
 
+        private string _lastPopupTitle = "";
+        private System.Windows.Forms.MessageBox? _messagePopup;
+
         public WindowController(ActivityWatcher activityWatcher)
         {
             _activityWatcher = activityWatcher;
@@ -136,6 +139,56 @@ namespace Bloxstrap.Integrations
                 }
                 case "RestoreWindowState": case "RestoreWindow": case "ResetWindow": {
                     resetWindow();
+                    break;
+                }
+                case "ShowPopup": {
+                    BloxstrapPopup? popupData;
+
+                    try
+                    {
+                        popupData = message.Data.Deserialize<BloxstrapPopup>();
+                    }
+                    catch (Exception)
+                    {
+                        App.Logger.WriteLine(LOG_IDENT, "Failed to parse message! (JSON deserialization threw an exception)");
+                        return;
+                    }
+
+                    if (popupData is null)
+                    {
+                        App.Logger.WriteLine(LOG_IDENT, "Failed to parse message! (JSON deserialization returned null)");
+                        return;
+                    }
+
+                    if (_messagePopup is not null) {
+                        // Won't work as its linked to winforms!
+                        // TODO: Use the C++ api instead for popups.
+
+                        /*IntPtr _popupHandle = FindWindow(_lastPopupTitle);
+                        bool _foundPopup = !(_popupHandle == (IntPtr)0);
+
+                        if (_foundPopup) {
+                            CloseWindow(_popupHandle)
+                        }*/
+
+                        _messagePopup = null;
+                    }
+
+                    string title = "";
+                    string caption = "";
+
+                    if (popupData.Title is not null) {
+                        title = (string) (popupData.Title);
+                    }
+
+                    if (popupData.Caption is not null) {
+                        caption = (string) (popupData.Caption);
+                    }
+
+                    _lastPopupTitle = title;
+                    System.Windows.Forms.MessageBoxButtons buttons = System.Windows.Forms.MessageBoxButtons.OK;
+
+                    _messagePopup = System.Windows.Forms.MessageBox.Show(new Form { TopMost = true }, title, caption, buttons, System.Windows.Forms.MessageBoxIcon.None);
                     break;
                 }
                 case "ShowWindow": {
@@ -422,6 +475,9 @@ namespace Bloxstrap.Integrations
             }
             return (IntPtr)0;
         }
+
+        [DllImport("user32.dll")]
+        static extern int CloseWindow(IntPtr hWnd);
 
         [DllImport("user32.dll", SetLastError = true)]
         internal static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
