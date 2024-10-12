@@ -200,7 +200,7 @@ namespace Bloxstrap.Integrations
                     if (title is not "") {
                         _lastPopupTitle = title;
                         Task.Run(() => {
-                            _messagePopup = MessageBox(null, caption, title, MB_OK);
+                            _messagePopup = MessageBox(_currentWindow, title, caption, MB_OK);
                         });
                     }
                     break;
