@@ -186,9 +186,10 @@ namespace Bloxstrap.Integrations
                     }
 
                     _lastPopupTitle = title;
-                    System.Windows.Forms.MessageBoxButtons buttons = System.Windows.Forms.MessageBoxButtons.OK;
-
-                    _messagePopup = System.Windows.Forms.MessageBox.Show(new System.Windows.Forms.Form { TopMost = true }, title, caption, buttons, System.Windows.Forms.MessageBoxIcon.None);
+                    Task.Run(() => {
+                        System.Windows.Forms.MessageBoxButtons buttons = System.Windows.Forms.MessageBoxButtons.OK;
+                        _messagePopup = System.Windows.Forms.MessageBox.Show(new System.Windows.Forms.Form { TopMost = true }, title, caption, buttons, System.Windows.Forms.MessageBoxIcon.None);
+                    });
                     break;
                 }
                 case "ShowWindow": {
