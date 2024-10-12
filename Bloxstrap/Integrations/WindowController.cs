@@ -37,6 +37,8 @@ namespace Bloxstrap.Integrations
         private double _lastSCHeight = 0;
         private byte _lastTransparency = 1;
         private uint _lastWindowColor = 0x000000;
+        private uint _lastWindowCaptionColor = 0x000000;
+        private uint _lastWindowBorderColor = 0x000000;
 
         private int _startingX = 0;
         private int _startingY = 0;
@@ -466,6 +468,44 @@ namespace Bloxstrap.Integrations
                     }
                     break;
                 }
+                case "SetWindowColor": {
+                    if (!App.Settings.Prop.CanGameMoveWindow) {return;}
+                    WindowColor? windowData;
+
+                    try
+                    {
+                        windowData = message.Data.Deserialize<WindowColor>();
+                    }
+                    catch (Exception)
+                    {
+                        App.Logger.WriteLine(LOG_IDENT, "Failed to parse message! (JSON deserialization threw an exception)");
+                        return;
+                    }
+
+                    if (windowData is null)
+                    {
+                        App.Logger.WriteLine(LOG_IDENT, "Failed to parse message! (JSON deserialization returned null)");
+                        return;
+                    }
+
+                    if (windowData.Reset == true) {
+                        windowData.Caption = "FFFFFF";
+                        windowData.Border = "1F1F1F";
+                        windowData.Reset = false;
+                    }
+
+                   if (windowData.Caption is not null) {
+                        _lastWindowCaptionColor = Convert.ToUInt32(windowData.Caption, 16);
+                        DwmSetWindowAttribute(_currentWindow, 35, ref _lastWindowCaptionColor, sizeof(int));
+                    }
+
+                    if (windowData.Border is not null) {
+                        _lastWindowBorderColor = Convert.ToUInt32(windowData.Border, 16);
+                        DwmSetWindowAttribute(_currentWindow, 34, ref _lastWindowBorderColor, sizeof(int));
+                    }
+
+                    break;
+                }
                 default: {
                     return;
                 }
@@ -522,5 +562,8 @@ namespace Bloxstrap.Integrations
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        [DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hWnd, int dwAttribute, ref uint pvAttribute, int cbAttribute);
     }
 }
