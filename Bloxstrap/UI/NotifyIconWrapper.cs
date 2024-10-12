@@ -35,8 +35,12 @@ namespace Bloxstrap.UI
 
             _notifyIcon.MouseClick += MouseClickEventHandler;
 
-            if (_activityWatcher is not null && App.Settings.Prop.ShowServerDetails)
-                _activityWatcher.OnGameJoin += OnGameJoin;
+            if (_activityWatcher is not null) {
+                if (App.Settings.Prop.ShowServerDetails)
+                    _activityWatcher.OnGameJoin += OnGameJoin;
+                
+                _activityWatcher.OnRPCMessage += (_, message) => OnMessage(message);
+            }
 
             _menuContainer = new(_watcher);
             _menuContainer.Show();
@@ -54,6 +58,58 @@ namespace Bloxstrap.UI
         #endregion
 
         #region Activity handlers
+        public void OnMessage(Message message) {
+            const string LOG_IDENT = "NotifyIconWrapper::OnMessage";
+
+            switch(message.Command)
+            {
+                case "SendNotification": {
+                    BloxstrapNotification? notifData;
+
+                    try
+                    {
+                        notifData = message.Data.Deserialize<BloxstrapNotification>();
+                    }
+                    catch (Exception)
+                    {
+                        App.Logger.WriteLine(LOG_IDENT, "Failed to parse message! (JSON deserialization threw an exception)");
+                        return;
+                    }
+
+                    if (notifData is null)
+                    {
+                        App.Logger.WriteLine(LOG_IDENT, "Failed to parse message! (JSON deserialization returned null)");
+                        return;
+                    }
+
+                    string title = " ";
+                    string caption = " ";
+                    int duration = 5;
+
+                    if (notifData.Title is not null) {
+                        title = (string) (notifData.Title);
+                    }
+
+                    if (notifData.Message is not null) {
+                        caption = (string) (notifData.Message);
+                    }
+
+                    if (notifData.Duration is not null) {
+                        duration = (int) (notifData.Duration);
+                    }
+
+                    ShowAlert(
+                        title,
+                        caption,
+                        duration,
+                        null
+                    );
+
+                    break;
+                }
+            }
+        }
+
         public async void OnGameJoin(object? sender, EventArgs e)
         {
             if (_activityWatcher is null)
@@ -85,7 +141,6 @@ namespace Bloxstrap.UI
         public void ShowAlert(string caption, string message, int duration, EventHandler? clickHandler)
         {
             string id = Guid.NewGuid().ToString()[..8];
-
             string LOG_IDENT = $"NotifyIconWrapper::ShowAlert.{id}";
 
             App.Logger.WriteLine(LOG_IDENT, $"Showing alert for {duration} seconds (clickHandler={clickHandler is not null})");
