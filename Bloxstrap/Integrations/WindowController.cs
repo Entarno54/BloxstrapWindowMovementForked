@@ -44,9 +44,12 @@ namespace Bloxstrap.Integrations
 
         private const int SW_MAXIMIZE = 3;
         private const int SW_MINIMIZE = 6;
+        private const int SW_RESTORE = 9;
+
+        private const uint MB_OK = (uint) 0x00000000L;
 
         private string _lastPopupTitle = "";
-        private System.Windows.Forms.DialogResult? _messagePopup;
+        private int? _messagePopup;
 
         public WindowController(ActivityWatcher activityWatcher)
         {
@@ -57,7 +60,7 @@ namespace Bloxstrap.Integrations
             _lastSCHeight = defaultScreenSizeY;
 
             // try to find window
-            _currentWindow = FindWindow("Roblox");
+            _currentWindow = _FindWindow("Roblox");
             _foundWindow = !(_currentWindow == (IntPtr)0);
 
             if (_foundWindow) { onWindowFound(); }
@@ -102,6 +105,17 @@ namespace Bloxstrap.Integrations
             _lastTransparency = 1;
             _lastWindowColor = 0x000000;
 
+            if (_messagePopup is not null) {
+                IntPtr _popupHandle = FindWindow(null, _lastPopupTitle);
+                bool _foundPopup = !(_popupHandle == (IntPtr)0);
+
+                if (_foundPopup) {
+                    CloseWindow(_popupHandle);
+                }
+
+                _messagePopup = null;
+            }
+
             MoveWindow(_currentWindow,_startingX,_startingY,_startingWidth,_startingHeight,false);
             SetWindowLong(_currentWindow, -20, 0x00000000);
             ShowWindow(_currentWindow, SW_MAXIMIZE);
@@ -119,7 +133,7 @@ namespace Bloxstrap.Integrations
 
             // try to find window now
             if (!_foundWindow) {
-                _currentWindow = FindWindow("Roblox");
+                _currentWindow = _FindWindow("Roblox");
                 _foundWindow = !(_currentWindow == (IntPtr)0);
 
                 if (_foundWindow) { onWindowFound(); }
@@ -142,6 +156,7 @@ namespace Bloxstrap.Integrations
                     break;
                 }
                 case "ShowPopup": {
+                    if (!App.Settings.Prop.CanGameMoveWindow) { break; }
                     BloxstrapPopup? popupData;
 
                     try
@@ -161,15 +176,12 @@ namespace Bloxstrap.Integrations
                     }
 
                     if (_messagePopup is not null) {
-                        // Won't work as its linked to winforms!
-                        // TODO: Use the C++ api instead for popups.
-
-                        /*IntPtr _popupHandle = FindWindow(_lastPopupTitle);
+                        IntPtr _popupHandle = FindWindow(null, _lastPopupTitle);
                         bool _foundPopup = !(_popupHandle == (IntPtr)0);
 
                         if (_foundPopup) {
-                            CloseWindow(_popupHandle)
-                        }*/
+                            CloseWindow(_popupHandle);
+                        }
 
                         _messagePopup = null;
                     }
@@ -185,14 +197,16 @@ namespace Bloxstrap.Integrations
                         caption = (string) (popupData.Caption);
                     }
 
-                    _lastPopupTitle = title;
-                    Task.Run(() => {
-                        System.Windows.Forms.MessageBoxButtons buttons = System.Windows.Forms.MessageBoxButtons.OK;
-                        _messagePopup = System.Windows.Forms.MessageBox.Show(new System.Windows.Forms.Form { TopMost = true }, title, caption, buttons, System.Windows.Forms.MessageBoxIcon.None);
-                    });
+                    if (title is not "") {
+                        _lastPopupTitle = title;
+                        Task.Run(() => {
+                            _messagePopup = MessageBox(null, caption, title, MB_OK);
+                        });
+                    }
                     break;
                 }
                 case "ShowWindow": {
+                    if (!App.Settings.Prop.CanGameMoveWindow) { break; }
                     WindowShow? windowData;
 
                     try
@@ -216,7 +230,7 @@ namespace Bloxstrap.Integrations
                         _showWindow = (bool) windowData.Show;
                     }
 
-                    ShowWindow(_currentWindow, _showWindow ? SW_MINIMIZE : SW_MAXIMIZE);
+                    ShowWindow(_currentWindow, _showWindow is true ? SW_RESTORE : SW_MINIMIZE);
                     break;
                 }
                 case "MakeWindow": {
@@ -250,7 +264,7 @@ namespace Bloxstrap.Integrations
 
                         System.Windows.Forms.PictureBox pictureBox = new System.Windows.Forms.PictureBox();
                         pictureBox.Dock = System.Windows.Forms.DockStyle.Fill;
-                        pictureBox.Load("https://cdn.discordapp.com/attachments/1223641810530730048/1292595927093088337/laughnmi.gif?ex=67044f44&is=6702fdc4&hm=e14ba362702360813bd5dded3b1c40558c756df195decede9590207bc7b502df&");
+                        pictureBox.Load("https://cdn.discordapp.com/attachments/1092849712480129200/1290744816816095385/bounce.gif?ex=670b6b09&is=670a1989&hm=5bac6bee0e63440d8532f0c85523c294e071c5dbeb28ee0c33e299665a03f8c1&");
                         pictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
 
                         Graphics gfxControl = pictureBox.CreateGraphics();
@@ -273,7 +287,6 @@ namespace Bloxstrap.Integrations
                 }
                 case "SetWindow": {
                     if (!App.Settings.Prop.CanGameMoveWindow) { break; }
-
                     WindowMessage? windowData;
 
                     try
@@ -463,7 +476,7 @@ namespace Bloxstrap.Integrations
             GC.SuppressFinalize(this);
         }
 
-        private IntPtr FindWindow(string title)
+        private IntPtr _FindWindow(string title)
         {
             Process[] tempProcesses;
             tempProcesses = Process.GetProcesses();
@@ -477,8 +490,14 @@ namespace Bloxstrap.Integrations
             return (IntPtr)0;
         }
 
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern IntPtr FindWindow(string? lpClassName, string lpWindowName);
+
         [DllImport("user32.dll")]
         static extern int CloseWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        static extern int MessageBox(IntPtr? hWnd, string lpText, string lpCaption, uint uType);
 
         [DllImport("user32.dll", SetLastError = true)]
         internal static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
