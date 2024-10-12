@@ -1,14 +1,13 @@
-﻿namespace Bloxstrap.Models.BloxstrapRPC
+﻿namespace Bloxstrap.Models.BloxstrapRPC;
+
+class BloxstrapNotification
 {
-    class BloxstrapNotification
-    {
-        [JsonPropertyName("title")]
-        public string? Title { get; set; }
+    [JsonPropertyName("title")]
+    public string? Title { get; set; }
 
-        [JsonPropertyName("message")]
-        public string? Message { get; set; }
+    [JsonPropertyName("message")]
+    public string? Message { get; set; }
 
-        [JsonPropertyName("duration")]
-        public int? Duration { get; set; }
-    }
+    [JsonPropertyName("duration")]
+    public int? Duration { get; set; }
 }

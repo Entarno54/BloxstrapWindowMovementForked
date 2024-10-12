@@ -1,25 +1,24 @@
-﻿namespace Bloxstrap.AppData
+﻿namespace Bloxstrap.AppData;
+
+internal interface IAppData
 {
-    internal interface IAppData
-    {
-        string ProductName { get; }
+    string ProductName { get; }
 
-        string BinaryType { get; }
+    string BinaryType { get; }
 
-        string RegistryName { get; }
+    string RegistryName { get; }
 
-        string ExecutableName { get; }
+    string ExecutableName { get; }
 
-        string StartEvent { get; }
+    string StartEvent { get; }
 
-        string Directory { get; }
+    string Directory { get; }
 
-        string LockFilePath { get; }
+    string LockFilePath { get; }
 
-        string ExecutablePath { get; }
+    string ExecutablePath { get; }
 
-        AppState State { get; }
+    AppState State { get; }
 
-        IReadOnlyDictionary<string, string> PackageDirectoryMap { get; set; }
-    }
+    IReadOnlyDictionary<string, string> PackageDirectoryMap { get; set; }
 }

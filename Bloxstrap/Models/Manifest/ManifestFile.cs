@@ -1,13 +1,12 @@
-﻿namespace Bloxstrap.Models.Manifest
-{
-    public class ManifestFile
-    {
-        public string Name { get; set; } = "";
-        public string Signature { get; set; } = "";
+﻿namespace Bloxstrap.Models.Manifest;
 
-        public override string ToString()
-        {
-            return $"[{Signature}] {Name}";
-        }
+public class ManifestFile
+{
+    public string Name { get; set; } = "";
+    public string Signature { get; set; } = "";
+
+    public override string ToString()
+    {
+        return $"[{Signature}] {Name}";
     }
 }

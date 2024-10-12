@@ -1,11 +1,10 @@
-﻿namespace Bloxstrap.Models.APIs.Config
-{
-    public class SupporterData
-    {
-        [JsonPropertyName("monthly")]
-        public SupporterGroup Monthly { get; set; } = new();
+﻿namespace Bloxstrap.Models.APIs.Config;
 
-        [JsonPropertyName("oneoff")]
-        public SupporterGroup OneOff { get; set; } = new();
-    }
+public class SupporterData
+{
+    [JsonPropertyName("monthly")]
+    public SupporterGroup Monthly { get; set; } = new();
+
+    [JsonPropertyName("oneoff")]
+    public SupporterGroup OneOff { get; set; } = new();
 }

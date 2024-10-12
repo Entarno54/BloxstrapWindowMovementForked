@@ -1,131 +1,130 @@
 ﻿using System.ComponentModel;
 
-namespace Bloxstrap
+namespace Bloxstrap;
+
+public class RobloxFastFlags
 {
-    public class RobloxFastFlags
+    private string _applicationName;
+    private string _channelName;
+
+    private bool _initialised = false;
+    private Dictionary<string, string>? _flags;
+
+    private SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
+
+    private RobloxFastFlags(string applicationName, string channelName)
     {
-        private string _applicationName;
-        private string _channelName;
+        _applicationName = applicationName;
+        _channelName = channelName;
+    }
 
-        private bool _initialised = false;
-        private Dictionary<string, string>? _flags;
+    private async Task Fetch()
+    {
+        if (_initialised)
+            return;
 
-        private SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
-
-        private RobloxFastFlags(string applicationName, string channelName)
-        {
-            _applicationName = applicationName;
-            _channelName = channelName;
-        }
-
-        private async Task Fetch()
+        await semaphoreSlim.WaitAsync();
+        try
         {
             if (_initialised)
                 return;
 
-            await semaphoreSlim.WaitAsync();
-            try
-            {
-                if (_initialised)
-                    return;
+            string logIndent = $"RobloxFastFlags::Fetch.{_applicationName}.{_channelName}";
+            App.Logger.WriteLine(logIndent, "Fetching fast flags");
 
-                string logIndent = $"RobloxFastFlags::Fetch.{_applicationName}.{_channelName}";
-                App.Logger.WriteLine(logIndent, "Fetching fast flags");
+            string path = $"/v2/settings/application/{_applicationName}";
+            if (_channelName != RobloxDeployment.DefaultChannel.ToLowerInvariant())
+                path += $"/bucket/{_channelName}";
 
-                string path = $"/v2/settings/application/{_applicationName}";
-                if (_channelName != RobloxDeployment.DefaultChannel.ToLowerInvariant())
-                    path += $"/bucket/{_channelName}";
-
-                HttpResponseMessage response;
-
-                try
-                {
-                    response = await App.HttpClient.GetAsync("https://clientsettingscdn.roblox.com" + path);
-                }
-                catch (Exception ex)
-                {
-                    App.Logger.WriteLine(logIndent, "Failed to contact clientsettingscdn! Falling back to clientsettings...");
-                    App.Logger.WriteException(logIndent, ex);
-
-                    response = await App.HttpClient.GetAsync("https://clientsettings.roblox.com" + path);
-                }
-
-                string rawResponse = await response.Content.ReadAsStringAsync();
-
-                response.EnsureSuccessStatusCode();
-
-                var clientSettings = JsonSerializer.Deserialize<ClientFlagSettings>(rawResponse);
-
-                if (clientSettings == null)
-                    throw new Exception("Deserialised client settings is null!");
-
-                if (clientSettings.ApplicationSettings == null)
-                    throw new Exception("Deserialised application settings is null!");
-
-                _flags = clientSettings.ApplicationSettings;
-                _initialised = true;
-            }
-            finally
-            {
-                semaphoreSlim.Release();
-            }
-        }
-
-        public async Task<T?> GetAsync<T>(string name)
-        {
-            await Fetch();
-
-            if (!_flags!.ContainsKey(name))
-                return default;
-
-            string value = _flags[name];
+            HttpResponseMessage response;
 
             try
             {
-                var converter = TypeDescriptor.GetConverter(typeof(T));
-                if (converter == null)
-                    return default;
-
-                return (T?)converter.ConvertFromString(value);
+                response = await App.HttpClient.GetAsync("https://clientsettingscdn.roblox.com" + path);
             }
-            catch (NotSupportedException) // boohoo
+            catch (Exception ex)
             {
+                App.Logger.WriteLine(logIndent, "Failed to contact clientsettingscdn! Falling back to clientsettings...");
+                App.Logger.WriteException(logIndent, ex);
+
+                response = await App.HttpClient.GetAsync("https://clientsettings.roblox.com" + path);
+            }
+
+            string rawResponse = await response.Content.ReadAsStringAsync();
+
+            response.EnsureSuccessStatusCode();
+
+            var clientSettings = JsonSerializer.Deserialize<ClientFlagSettings>(rawResponse);
+
+            if (clientSettings == null)
+                throw new Exception("Deserialised client settings is null!");
+
+            if (clientSettings.ApplicationSettings == null)
+                throw new Exception("Deserialised application settings is null!");
+
+            _flags = clientSettings.ApplicationSettings;
+            _initialised = true;
+        }
+        finally
+        {
+            semaphoreSlim.Release();
+        }
+    }
+
+    public async Task<T?> GetAsync<T>(string name)
+    {
+        await Fetch();
+
+        if (!_flags!.ContainsKey(name))
+            return default;
+
+        string value = _flags[name];
+
+        try
+        {
+            var converter = TypeDescriptor.GetConverter(typeof(T));
+            if (converter == null)
                 return default;
-            }
+
+            return (T?)converter.ConvertFromString(value);
         }
-
-        public T? Get<T>(string name)
+        catch (NotSupportedException) // boohoo
         {
-            return GetAsync<T>(name).Result;
+            return default;
         }
+    }
 
-        // _cache[applicationName][channelName]
-        private static Dictionary<string, Dictionary<string, RobloxFastFlags>> _cache = new();
+    public T? Get<T>(string name)
+    {
+        return GetAsync<T>(name).Result;
+    }
 
-        public static RobloxFastFlags PCDesktopClient { get; } = GetSettings("PCDesktopClient");
-        public static RobloxFastFlags PCClientBootstrapper { get; } = GetSettings("PCClientBootstrapper");
+    // _cache[applicationName][channelName]
+    private static Dictionary<string, Dictionary<string, RobloxFastFlags>> _cache = new();
 
-        public static RobloxFastFlags GetSettings(string applicationName, string channelName = RobloxDeployment.DefaultChannel, bool shouldCache = true)
+    public static RobloxFastFlags PCDesktopClient { get; } = GetSettings("PCDesktopClient");
+    public static RobloxFastFlags PCClientBootstrapper { get; } = GetSettings("PCClientBootstrapper");
+
+    public static RobloxFastFlags GetSettings(string applicationName, string channelName = RobloxDeployment.DefaultChannel, bool shouldCache = true)
+    {
+        channelName = channelName.ToLowerInvariant();
+
+        lock (_cache)
         {
-            channelName = channelName.ToLowerInvariant();
+            if (_cache.ContainsKey(applicationName) && _cache[applicationName].ContainsKey(channelName))
+                return _cache[applicationName][channelName];
 
-            lock (_cache)
+            var flags = new RobloxFastFlags(applicationName, channelName);
+
+            if (shouldCache)
             {
-                if (_cache.ContainsKey(applicationName) && _cache[applicationName].ContainsKey(channelName))
-                    return _cache[applicationName][channelName];
+                if (!_cache.ContainsKey(applicationName))
+                    _cache[applicationName] = new();
 
-                var flags = new RobloxFastFlags(applicationName, channelName);
-
-                if (shouldCache)
-                {
-                    if (!_cache.ContainsKey(applicationName))
-                        _cache[applicationName] = new();
-
-                    _cache[applicationName][channelName] = flags;
-                }
-
-                return flags;
+                _cache[applicationName][channelName] = flags;
             }
+
+            return flags;
         }
     }
 }

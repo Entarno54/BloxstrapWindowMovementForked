@@ -1,7 +1,6 @@
 ﻿using System.Windows;
 using System.Runtime.InteropServices;
 using System.Drawing;
-using System.Numerics;
 using System.Drawing.Drawing2D;
 
 public struct Rect {
@@ -15,17 +14,19 @@ namespace Bloxstrap.Integrations
 {
     public class WindowController : IDisposable
     {
+        private const string LOG_IDENT = "WindowController::OnMessage";
+
         private readonly ActivityWatcher _activityWatcher;
         private IntPtr _currentWindow;
         private bool _foundWindow = false;
         public const uint WM_SETTEXT = 0x000C;
 
         // 1280x720 as default
-        private double defaultScreenSizeX = 1280;
-        private double defaultScreenSizeY = 720;
+        private readonly int defaultScreenSizeX = 1280;
+        private readonly int defaultScreenSizeY = 720;
 
-        private double screenSizeX = 0;
-        private double screenSizeY = 0;
+        private double screenSizeX;
+        private double screenSizeY;
 
         // cache last data to prevent bloating
         private int _lastX = 0;
@@ -63,7 +64,8 @@ namespace Bloxstrap.Integrations
             _currentWindow = _FindWindow("Roblox");
             _foundWindow = !(_currentWindow == (IntPtr)0);
 
-            if (_foundWindow) { onWindowFound(); }
+            if (_foundWindow) 
+                onWindowFound(); 
             
             screenSizeX = SystemParameters.PrimaryScreenWidth;
             screenSizeY = SystemParameters.PrimaryScreenHeight;
@@ -85,8 +87,8 @@ namespace Bloxstrap.Integrations
             //dpi awareness
             using (Graphics graphics = Graphics.FromHwnd(_currentWindow))
             {
-                screenSizeX *= (double)(graphics.DpiX / 96);
-                screenSizeY *= (double)(graphics.DpiY / 96);
+                screenSizeX *= graphics.DpiX / 96;
+                screenSizeY *= graphics.DpiY / 96;
             }
             
             App.Logger.WriteLine("WindowController::onWindowFound", $"WinSize X:{_lastX} Y:{_lastY} W:{_lastWidth} H:{_lastHeight} sW:{screenSizeX} sH:{screenSizeY}");
@@ -123,23 +125,23 @@ namespace Bloxstrap.Integrations
             SendMessage(_currentWindow, WM_SETTEXT, IntPtr.Zero, "Roblox");
         }
 
-        private List<System.Windows.Forms.Form> forms = new List<System.Windows.Forms.Form>();
+        private List<System.Windows.Forms.Form> forms = new();
         public void removeWindows() {
             // TODO: Clear the list above!!
         }
 
         public void OnMessage(Message message) {
-            const string LOG_IDENT = "WindowController::OnMessage";
-
             // try to find window now
             if (!_foundWindow) {
                 _currentWindow = _FindWindow("Roblox");
                 _foundWindow = !(_currentWindow == (IntPtr)0);
 
-                if (_foundWindow) { onWindowFound(); }
+                if (_foundWindow) 
+                    onWindowFound(); 
             }
 
-            if (_currentWindow == (IntPtr)0) {return;}
+            if (_currentWindow == (IntPtr)0 ) 
+                return;
 
             switch(message.Command)
             {
@@ -156,7 +158,8 @@ namespace Bloxstrap.Integrations
                     break;
                 }
                 case "ShowPopup": {
-                    if (!App.Settings.Prop.CanGameMoveWindow) { break; }
+                    if (!App.Settings.Prop.CanGameMoveWindow) 
+                        break; 
                     BloxstrapPopup? popupData;
 
                     try
@@ -189,14 +192,12 @@ namespace Bloxstrap.Integrations
                     string title = "";
                     string caption = "";
 
-                    if (popupData.Title is not null) {
-                        title = (string) (popupData.Title);
-                    }
-
-                    if (popupData.Caption is not null) {
-                        caption = (string) (popupData.Caption);
-                    }
-
+                    if (popupData.Title is not null) 
+                        title = popupData.Title;
+                    
+                    if (popupData.Caption is not null) 
+                        caption = popupData.Caption;
+                    
                     if (title is not "") {
                         _lastPopupTitle = title;
                         Task.Run(() => {
@@ -230,10 +231,10 @@ namespace Bloxstrap.Integrations
                         _showWindow = (bool) windowData.Show;
                     }
 
-                    ShowWindow(_currentWindow, _showWindow is true ? SW_RESTORE : SW_MINIMIZE);
+                    ShowWindow(_currentWindow, _showWindow ? SW_RESTORE : SW_MINIMIZE);
                     break;
                 }
-                case "MakeWindow": {
+                case "CreateWindow": case "MakeWindow": {
                     if (!App.Settings.Prop.CanGameMoveWindow) { break; }
                     WindowMessage? windowData;
 
@@ -276,9 +277,11 @@ namespace Bloxstrap.Integrations
                         form.ShowDialog();
                         forms.Add(form);
 
-                        Message msg = new Message();
-                        msg.Data = message.Data;
-                        msg.Command = "SetWindow";
+                        Message msg = new Message
+                        {
+                            Data = message.Data,
+                            Command = "SetWindow"
+                        };
 
                         OnMessage(msg);
                     });
@@ -312,7 +315,7 @@ namespace Bloxstrap.Integrations
 
                     System.Windows.Forms.Form? targetForm = null;
                     if (windowData.WindowID is not null && (int) windowData.WindowID >= 0) {
-                        targetForm = forms.ElementAt(new System.Index((int) windowData.WindowID));
+                        targetForm = forms.ElementAt(new Index((int) windowData.WindowID));
                     }
 
                     if (windowData.ScaleWidth is not null) {
@@ -478,8 +481,7 @@ namespace Bloxstrap.Integrations
 
         private IntPtr _FindWindow(string title)
         {
-            Process[] tempProcesses;
-            tempProcesses = Process.GetProcesses();
+            Process[] tempProcesses = Process.GetProcesses();
             foreach (Process proc in tempProcesses)
             {
                 if (proc.MainWindowTitle == title)

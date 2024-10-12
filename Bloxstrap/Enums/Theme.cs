@@ -1,10 +1,9 @@
-﻿namespace Bloxstrap.Enums
+﻿namespace Bloxstrap.Enums;
+
+public enum Theme
 {
-    public enum Theme
-    {
-        [EnumName(FromTranslation = "Common.SystemDefault")]
-        Default,
-        Light,
-        Dark
-    }
+    [EnumName(FromTranslation = "Common.SystemDefault")]
+    Default,
+    Light,
+    Dark
 }

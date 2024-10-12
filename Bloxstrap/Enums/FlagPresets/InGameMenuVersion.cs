@@ -1,12 +1,11 @@
-﻿namespace Bloxstrap.Enums.FlagPresets
+﻿namespace Bloxstrap.Enums.FlagPresets;
+
+public enum InGameMenuVersion
 {
-    public enum InGameMenuVersion
-    {
-        [EnumName(FromTranslation = "Common.Default")]
-        Default,
-        V1,
-        V2,
-        V4,
-        V4Chrome
-    }
+    [EnumName(FromTranslation = "Common.Default")]
+    Default,
+    V1,
+    V2,
+    V4,
+    V4Chrome
 }

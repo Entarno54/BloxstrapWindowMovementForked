@@ -1,16 +1,15 @@
 ﻿using Bloxstrap.UI.ViewModels.Settings;
 
-namespace Bloxstrap.UI.Elements.Settings.Pages
+namespace Bloxstrap.UI.Elements.Settings.Pages;
+
+/// <summary>
+/// Interaction logic for AppearancePage.xaml
+/// </summary>
+public partial class AppearancePage
 {
-    /// <summary>
-    /// Interaction logic for AppearancePage.xaml
-    /// </summary>
-    public partial class AppearancePage
+    public AppearancePage()
     {
-        public AppearancePage()
-        {
-            DataContext = new AppearanceViewModel(this);
-            InitializeComponent();
-        }
+        DataContext = new AppearanceViewModel(this);
+        InitializeComponent();
     }
 }

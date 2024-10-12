@@ -1,9 +1,8 @@
-﻿namespace Bloxstrap.Enums
+﻿namespace Bloxstrap.Enums;
+
+public enum ServerType
 {
-    public enum ServerType
-    {
-        Public,
-        Private,
-        Reserved
-    }
+    Public,
+    Private,
+    Reserved
 }

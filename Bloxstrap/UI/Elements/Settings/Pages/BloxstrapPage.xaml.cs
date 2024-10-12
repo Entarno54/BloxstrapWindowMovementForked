@@ -1,21 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Bloxstrap.UI.ViewModels.Settings;
+﻿using Bloxstrap.UI.ViewModels.Settings;
 
-namespace Bloxstrap.UI.Elements.Settings.Pages
+namespace Bloxstrap.UI.Elements.Settings.Pages;
+
+/// <summary>
+/// Interaction logic for BloxstrapPage.xaml
+/// </summary>
+public partial class BloxstrapPage
 {
-    /// <summary>
-    /// Interaction logic for BloxstrapPage.xaml
-    /// </summary>
-    public partial class BloxstrapPage
+    public BloxstrapPage()
     {
-        public BloxstrapPage()
-        {
-            DataContext = new BloxstrapViewModel();
-            InitializeComponent();
-        }
+        DataContext = new BloxstrapViewModel();
+        InitializeComponent();
     }
 }

@@ -1,13 +1,12 @@
-﻿namespace Bloxstrap.UI.Elements.About.Pages
+﻿namespace Bloxstrap.UI.Elements.About.Pages;
+
+/// <summary>
+/// Interaction logic for LicensesPage.xaml
+/// </summary>
+public partial class LicensesPage
 {
-    /// <summary>
-    /// Interaction logic for LicensesPage.xaml
-    /// </summary>
-    public partial class LicensesPage
+    public LicensesPage()
     {
-        public LicensesPage()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
     }
 }

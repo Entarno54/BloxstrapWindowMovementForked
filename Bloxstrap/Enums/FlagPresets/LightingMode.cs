@@ -1,10 +1,9 @@
-﻿namespace Bloxstrap.Enums.FlagPresets
+﻿namespace Bloxstrap.Enums.FlagPresets;
+
+public enum LightingMode
 {
-    public enum LightingMode
-    {
-        Default,
-        Voxel,
-        ShadowMap,
-        Future
-    }
+    Default,
+    Voxel,
+    ShadowMap,
+    Future
 }

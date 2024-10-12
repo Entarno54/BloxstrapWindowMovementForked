@@ -1,9 +1,8 @@
-﻿namespace Bloxstrap.Enums
+﻿namespace Bloxstrap.Enums;
+
+public enum GenericTriState
 {
-    public enum GenericTriState
-    {
-        Successful,
-        Failed,
-        Unknown
-    }
+    Successful,
+    Failed,
+    Unknown
 }

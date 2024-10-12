@@ -1,17 +1,16 @@
 ﻿using System.Windows;
 
-namespace Bloxstrap.UI.Elements.Bootstrapper.Base
+namespace Bloxstrap.UI.Elements.Bootstrapper.Base;
+
+static class BaseFunctions
 {
-    static class BaseFunctions
+    public static void ShowSuccess(string message, Action? callback)
     {
-        public static void ShowSuccess(string message, Action? callback)
-        {
-            Frontend.ShowMessageBox(message, MessageBoxImage.Information);
+        Frontend.ShowMessageBox(message, MessageBoxImage.Information);
 
-            if (callback is not null)
-                callback();
+        if (callback is not null)
+            callback();
 
-            App.Terminate();
-        }
+        App.Terminate();
     }
 }

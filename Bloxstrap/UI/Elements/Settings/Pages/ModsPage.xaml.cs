@@ -1,16 +1,15 @@
 ﻿using Bloxstrap.UI.ViewModels.Settings;
 
-namespace Bloxstrap.UI.Elements.Settings.Pages
+namespace Bloxstrap.UI.Elements.Settings.Pages;
+
+/// <summary>
+/// Interaction logic for ModsPage.xaml
+/// </summary>
+public partial class ModsPage
 {
-    /// <summary>
-    /// Interaction logic for ModsPage.xaml
-    /// </summary>
-    public partial class ModsPage
+    public ModsPage()
     {
-        public ModsPage()
-        {
-            DataContext = new ModsViewModel();
-            InitializeComponent();
-        }
+        DataContext = new ModsViewModel();
+        InitializeComponent();
     }
 }

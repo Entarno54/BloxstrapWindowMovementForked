@@ -1,10 +1,9 @@
 ﻿using System.Windows.Media;
 
-namespace Bloxstrap.Models
+namespace Bloxstrap.Models;
+
+public class BootstrapperIconEntry
 {
-    public class BootstrapperIconEntry
-    {
-        public BootstrapperIcon IconType { get; set; }
-        public ImageSource ImageSource => IconType.GetIcon().GetImageSource();
-    }
+    public BootstrapperIcon IconType { get; set; }
+    public ImageSource ImageSource => IconType.GetIcon().GetImageSource();
 }

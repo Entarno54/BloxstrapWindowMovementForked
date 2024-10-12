@@ -1,13 +1,12 @@
-﻿namespace Bloxstrap.UI.Elements.About.Pages
+﻿namespace Bloxstrap.UI.Elements.About.Pages;
+
+/// <summary>
+/// Interaction logic for TranslatorsPage.xaml
+/// </summary>
+public partial class TranslatorsPage
 {
-    /// <summary>
-    /// Interaction logic for TranslatorsPage.xaml
-    /// </summary>
-    public partial class TranslatorsPage
+    public TranslatorsPage()
     {
-        public TranslatorsPage()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
     }
 }

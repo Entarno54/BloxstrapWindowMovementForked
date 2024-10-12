@@ -1,11 +1,10 @@
-﻿namespace Bloxstrap.Models.BloxstrapRPC
-{
-    class BloxstrapPopup
-    {
-        [JsonPropertyName("title")]
-        public string? Title { get; set; }
+﻿namespace Bloxstrap.Models.BloxstrapRPC;
 
-        [JsonPropertyName("caption")]
-        public string? Caption { get; set; }
-    }
+class BloxstrapPopup
+{
+    [JsonPropertyName("title")]
+    public string? Title { get; set; }
+
+    [JsonPropertyName("caption")]
+    public string? Caption { get; set; }
 }

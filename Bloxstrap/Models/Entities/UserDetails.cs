@@ -1,42 +1,41 @@
 ﻿using Bloxstrap.Models.RobloxApi;
 
-namespace Bloxstrap.Models.Entities
+namespace Bloxstrap.Models.Entities;
+
+public class UserDetails
 {
-    public class UserDetails
+    private static List<UserDetails> _cache { get; set; } = new();
+
+    public GetUserResponse Data { get; set; } = null!;
+
+    public ThumbnailResponse Thumbnail { get; set; } = null!;
+
+    public static async Task<UserDetails> Fetch(long id)
     {
-        private static List<UserDetails> _cache { get; set; } = new();
+        var cacheQuery = _cache.Where(x => x.Data?.Id == id);
 
-        public GetUserResponse Data { get; set; } = null!;
+        if (cacheQuery.Any())
+            return cacheQuery.First();
 
-        public ThumbnailResponse Thumbnail { get; set; } = null!;
+        var userResponse = await Http.GetJson<GetUserResponse>($"https://users.roblox.com/v1/users/{id}");
 
-        public static async Task<UserDetails> Fetch(long id)
+        if (userResponse is null)
+            throw new InvalidHTTPResponseException("Roblox API for User Details returned invalid data");
+
+        // we can remove '-headshot' from the url if we want a full avatar picture
+        var thumbnailResponse = await Http.GetJson<ApiArrayResponse<ThumbnailResponse>>($"https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds={id}&size=180x180&format=Png&isCircular=false");
+
+        if (thumbnailResponse is null || !thumbnailResponse.Data.Any())
+            throw new InvalidHTTPResponseException("Roblox API for Thumbnails returned invalid data");
+
+        var details = new UserDetails
         {
-            var cacheQuery = _cache.Where(x => x.Data?.Id == id);
+            Data = userResponse,
+            Thumbnail = thumbnailResponse.Data.First()
+        };
 
-            if (cacheQuery.Any())
-                return cacheQuery.First();
+        _cache.Add(details);
 
-            var userResponse = await Http.GetJson<GetUserResponse>($"https://users.roblox.com/v1/users/{id}");
-
-            if (userResponse is null)
-                throw new InvalidHTTPResponseException("Roblox API for User Details returned invalid data");
-
-            // we can remove '-headshot' from the url if we want a full avatar picture
-            var thumbnailResponse = await Http.GetJson<ApiArrayResponse<ThumbnailResponse>>($"https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds={id}&size=180x180&format=Png&isCircular=false");
-
-            if (thumbnailResponse is null || !thumbnailResponse.Data.Any())
-                throw new InvalidHTTPResponseException("Roblox API for Thumbnails returned invalid data");
-
-            var details = new UserDetails
-            {
-                Data = userResponse,
-                Thumbnail = thumbnailResponse.Data.First()
-            };
-
-            _cache.Add(details);
-
-            return details;
-        }
+        return details;
     }
 }

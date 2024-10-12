@@ -1,69 +1,65 @@
-﻿using Bloxstrap.Models.Entities;
-using Bloxstrap.Models.SettingTasks.Base;
+﻿namespace Bloxstrap.Models.SettingTasks;
 
-namespace Bloxstrap.Models.SettingTasks
+public class EnumModPresetTask<T> : EnumBaseTask<T> where T : struct, Enum
 {
-    public class EnumModPresetTask<T> : EnumBaseTask<T> where T : struct, Enum
+    private readonly Dictionary<T, Dictionary<string, ModPresetFileData>> _fileDataMap = new();
+
+    private readonly Dictionary<T, Dictionary<string, string>> _map;
+
+    public EnumModPresetTask(string name, Dictionary<T, Dictionary<string, string>> map) : base("ModPreset", name)
     {
-        private readonly Dictionary<T, Dictionary<string, ModPresetFileData>> _fileDataMap = new();
+        _map = map;
 
-        private readonly Dictionary<T, Dictionary<string, string>> _map;
-
-        public EnumModPresetTask(string name, Dictionary<T, Dictionary<string, string>> map) : base("ModPreset", name)
+        foreach (var enumPair in _map)
         {
-            _map = map;
+            var dataMap = new Dictionary<string, ModPresetFileData>();
 
-            foreach (var enumPair in _map)
+            foreach (var resourcePair in enumPair.Value)
             {
-                var dataMap = new Dictionary<string, ModPresetFileData>();
+                var data = new ModPresetFileData(resourcePair.Key, resourcePair.Value);
 
-                foreach (var resourcePair in enumPair.Value)
+                if (data.HashMatches() && OriginalState.Equals(default(T)))
+                    OriginalState = enumPair.Key;
+
+                dataMap[resourcePair.Key] = data;
+            }
+
+            _fileDataMap[enumPair.Key] = dataMap;
+        }
+    }
+
+    public override void Execute()
+    {
+        if (!NewState.Equals(default(T)))
+        {
+            var resourceMap = _fileDataMap[NewState];
+
+            foreach (var resourcePair in resourceMap)
+            {
+                var data = resourcePair.Value;
+
+                if (!data.HashMatches())
                 {
-                    var data = new ModPresetFileData(resourcePair.Key, resourcePair.Value);
+                    Directory.CreateDirectory(Path.GetDirectoryName(data.FullFilePath)!);
 
-                    if (data.HashMatches() && OriginalState.Equals(default(T)))
-                        OriginalState = enumPair.Key;
+                    using var resourceStream = data.ResourceStream;
+                    using var memoryStream = new MemoryStream();
+                    data.ResourceStream.CopyTo(memoryStream);
 
-                    dataMap[resourcePair.Key] = data;
+                    Filesystem.AssertReadOnly(data.FullFilePath);
+                    File.WriteAllBytes(data.FullFilePath, memoryStream.ToArray());
                 }
-
-                _fileDataMap[enumPair.Key] = dataMap;
+            }
+        }
+        else
+        {
+            foreach (var dataPair in _fileDataMap.First().Value)
+            {
+                Filesystem.AssertReadOnly(dataPair.Value.FullFilePath);
+                File.Delete(dataPair.Value.FullFilePath);
             }
         }
 
-        public override void Execute()
-        {
-            if (!NewState.Equals(default(T)))
-            {
-                var resourceMap = _fileDataMap[NewState];
-
-                foreach (var resourcePair in resourceMap)
-                {
-                    var data = resourcePair.Value;
-
-                    if (!data.HashMatches())
-                    {
-                        Directory.CreateDirectory(Path.GetDirectoryName(data.FullFilePath)!);
-
-                        using var resourceStream = data.ResourceStream;
-                        using var memoryStream = new MemoryStream();
-                        data.ResourceStream.CopyTo(memoryStream);
-
-                        Filesystem.AssertReadOnly(data.FullFilePath);
-                        File.WriteAllBytes(data.FullFilePath, memoryStream.ToArray());
-                    }
-                }
-            }
-            else
-            {
-                foreach (var dataPair in _fileDataMap.First().Value)
-                {
-                    Filesystem.AssertReadOnly(dataPair.Value.FullFilePath);
-                    File.Delete(dataPair.Value.FullFilePath);
-                }
-            }
-
-            OriginalState = NewState;
-        }
+        OriginalState = NewState;
     }
 }

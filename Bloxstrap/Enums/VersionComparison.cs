@@ -1,9 +1,8 @@
-﻿namespace Bloxstrap.Enums
+﻿namespace Bloxstrap.Enums;
+
+enum VersionComparison
 {
-    enum VersionComparison
-    {
-        LessThan = -1,
-        Equal = 0,
-        GreaterThan = 1
-    }
+    LessThan = -1,
+    Equal = 0,
+    GreaterThan = 1
 }

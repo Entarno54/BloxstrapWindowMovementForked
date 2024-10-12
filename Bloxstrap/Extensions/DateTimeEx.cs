@@ -1,10 +1,9 @@
-﻿namespace Bloxstrap.Extensions
+﻿namespace Bloxstrap.Extensions;
+
+static class DateTimeEx
 {
-    static class DateTimeEx
+    public static string ToFriendlyString(this DateTime dateTime)
     {
-        public static string ToFriendlyString(this DateTime dateTime)
-        {
-            return dateTime.ToString("dddd, d MMMM yyyy 'at' h:mm:ss tt", CultureInfo.InvariantCulture);
-        }
+        return dateTime.ToString("dddd, d MMMM yyyy 'at' h:mm:ss tt", CultureInfo.InvariantCulture);
     }
 }

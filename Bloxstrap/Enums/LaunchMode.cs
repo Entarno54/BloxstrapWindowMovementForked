@@ -1,10 +1,9 @@
-﻿namespace Bloxstrap.Enums
+﻿namespace Bloxstrap.Enums;
+
+public enum LaunchMode
 {
-    public enum LaunchMode
-    {
-        None,
-        Player,
-        Studio,
-        StudioAuth
-    }
+    None,
+    Player,
+    Studio,
+    StudioAuth
 }

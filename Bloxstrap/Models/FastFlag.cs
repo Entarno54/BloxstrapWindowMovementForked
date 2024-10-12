@@ -1,9 +1,8 @@
-﻿namespace Bloxstrap.Models
+﻿namespace Bloxstrap.Models;
+
+public class FastFlag
 {
-    public class FastFlag
-    {
-        // public bool Enabled { get; set; }
-        public string Name { get; set; } = null!;
-        public string Value { get; set; } = null!;
-    }
+    // public bool Enabled { get; set; }
+    public string Name { get; set; } = null!;
+    public string Value { get; set; } = null!;
 }

@@ -1,194 +1,192 @@
 ﻿using Bloxstrap.Integrations;
-using Bloxstrap.UI.Elements.About;
 using Bloxstrap.UI.Elements.ContextMenu;
 
-namespace Bloxstrap.UI
+namespace Bloxstrap.UI;
+
+public class NotifyIconWrapper : IDisposable
 {
-    public class NotifyIconWrapper : IDisposable
+    // lol who needs properly structured mvvm and xaml when you have the absolute catastrophe that this is
+    // i dont want to do anything anymore after touching this, this sucks
+
+    private bool _disposing = false;
+
+    private readonly System.Windows.Forms.NotifyIcon _notifyIcon;
+        
+    private readonly MenuContainer _menuContainer;
+        
+    private readonly Watcher _watcher;
+
+    private ActivityWatcher? _activityWatcher => _watcher.ActivityWatcher;
+
+    EventHandler? _alertClickHandler;
+
+    public NotifyIconWrapper(Watcher watcher)
     {
-        // lol who needs properly structured mvvm and xaml when you have the absolute catastrophe that this is
-        // i dont want to do anything anymore after touching this, this sucks
+        App.Logger.WriteLine("NotifyIconWrapper::NotifyIconWrapper", "Initializing notification area icon");
 
-        private bool _disposing = false;
+        _watcher = watcher;
 
-        private readonly System.Windows.Forms.NotifyIcon _notifyIcon;
-        
-        private readonly MenuContainer _menuContainer;
-        
-        private readonly Watcher _watcher;
-
-        private ActivityWatcher? _activityWatcher => _watcher.ActivityWatcher;
-
-        EventHandler? _alertClickHandler;
-
-        public NotifyIconWrapper(Watcher watcher)
+        _notifyIcon = new(new System.ComponentModel.Container())
         {
-            App.Logger.WriteLine("NotifyIconWrapper::NotifyIconWrapper", "Initializing notification area icon");
+            Icon = Properties.Resources.IconBloxstrap,
+            Text = App.ProjectName,
+            Visible = true
+        };
 
-            _watcher = watcher;
+        _notifyIcon.MouseClick += MouseClickEventHandler;
 
-            _notifyIcon = new(new System.ComponentModel.Container())
-            {
-                Icon = Properties.Resources.IconBloxstrap,
-                Text = App.ProjectName,
-                Visible = true
-            };
-
-            _notifyIcon.MouseClick += MouseClickEventHandler;
-
-            if (_activityWatcher is not null) {
-                if (App.Settings.Prop.ShowServerDetails)
-                    _activityWatcher.OnGameJoin += OnGameJoin;
+        if (_activityWatcher is not null) {
+            if (App.Settings.Prop.ShowServerDetails)
+                _activityWatcher.OnGameJoin += OnGameJoin;
                 
-                _activityWatcher.OnRPCMessage += (_, message) => OnMessage(message);
-            }
-
-            _menuContainer = new(_watcher);
-            _menuContainer.Show();
+            _activityWatcher.OnRPCMessage += (_, message) => OnMessage(message);
         }
 
-        #region Context menu
-        public void MouseClickEventHandler(object? sender, System.Windows.Forms.MouseEventArgs e)
+        _menuContainer = new(_watcher);
+        _menuContainer.Show();
+    }
+
+    #region Context menu
+    public void MouseClickEventHandler(object? sender, System.Windows.Forms.MouseEventArgs e)
+    {
+        if (e.Button != System.Windows.Forms.MouseButtons.Right)
+            return;
+
+        _menuContainer.Activate();
+        _menuContainer.ContextMenu.IsOpen = true;
+    }
+    #endregion
+
+    #region Activity handlers
+    public void OnMessage(Message message) {
+        const string LOG_IDENT = "NotifyIconWrapper::OnMessage";
+
+        switch(message.Command)
         {
-            if (e.Button != System.Windows.Forms.MouseButtons.Right)
-                return;
+            case "SendNotification": {
+                BloxstrapNotification? notifData;
 
-            _menuContainer.Activate();
-            _menuContainer.ContextMenu.IsOpen = true;
-        }
-        #endregion
-
-        #region Activity handlers
-        public void OnMessage(Message message) {
-            const string LOG_IDENT = "NotifyIconWrapper::OnMessage";
-
-            switch(message.Command)
-            {
-                case "SendNotification": {
-                    BloxstrapNotification? notifData;
-
-                    try
-                    {
-                        notifData = message.Data.Deserialize<BloxstrapNotification>();
-                    }
-                    catch (Exception)
-                    {
-                        App.Logger.WriteLine(LOG_IDENT, "Failed to parse message! (JSON deserialization threw an exception)");
-                        return;
-                    }
-
-                    if (notifData is null)
-                    {
-                        App.Logger.WriteLine(LOG_IDENT, "Failed to parse message! (JSON deserialization returned null)");
-                        return;
-                    }
-
-                    string title = " ";
-                    string caption = " ";
-                    int duration = 5;
-
-                    if (notifData.Title is not null) {
-                        title = (string) (notifData.Title);
-                    }
-
-                    if (notifData.Message is not null) {
-                        caption = (string) (notifData.Message);
-                    }
-
-                    if (notifData.Duration is not null) {
-                        duration = (int) (notifData.Duration);
-                    }
-
-                    ShowAlert(
-                        title,
-                        caption,
-                        duration,
-                        null
-                    );
-
-                    break;
+                try
+                {
+                    notifData = message.Data.Deserialize<BloxstrapNotification>();
                 }
+                catch (Exception)
+                {
+                    App.Logger.WriteLine(LOG_IDENT, "Failed to parse message! (JSON deserialization threw an exception)");
+                    return;
+                }
+
+                if (notifData is null)
+                {
+                    App.Logger.WriteLine(LOG_IDENT, "Failed to parse message! (JSON deserialization returned null)");
+                    return;
+                }
+
+                string title = " ";
+                string caption = " ";
+                int duration = 5;
+
+                if (notifData.Title is not null) {
+                    title = (string) (notifData.Title);
+                }
+
+                if (notifData.Message is not null) {
+                    caption = (string) (notifData.Message);
+                }
+
+                if (notifData.Duration is not null) {
+                    duration = (int) (notifData.Duration);
+                }
+
+                ShowAlert(
+                    title,
+                    caption,
+                    duration,
+                    null
+                );
+
+                break;
             }
         }
+    }
 
-        public async void OnGameJoin(object? sender, EventArgs e)
-        {
-            if (_activityWatcher is null)
-                return;
+    public async void OnGameJoin(object? sender, EventArgs e)
+    {
+        if (_activityWatcher is null)
+            return;
             
-            string? serverLocation = await _activityWatcher.Data.QueryServerLocation();
+        string? serverLocation = await _activityWatcher.Data.QueryServerLocation();
 
-            if (string.IsNullOrEmpty(serverLocation))
-                return;
+        if (string.IsNullOrEmpty(serverLocation))
+            return;
 
-            string title = _activityWatcher.Data.ServerType switch
-            {
-                ServerType.Public => Strings.ContextMenu_ServerInformation_Notification_Title_Public,
-                ServerType.Private => Strings.ContextMenu_ServerInformation_Notification_Title_Private,
-                ServerType.Reserved => Strings.ContextMenu_ServerInformation_Notification_Title_Reserved,
-                _ => ""
-            };
-
-            ShowAlert(
-                title,
-                String.Format(Strings.ContextMenu_ServerInformation_Notification_Text, serverLocation),
-                10,
-                (_, _) => _menuContainer.ShowServerInformationWindow()
-            );
-        }
-        #endregion
-
-        // we may need to create our own handler for this, because this sorta sucks
-        public void ShowAlert(string caption, string message, int duration, EventHandler? clickHandler)
+        string title = _activityWatcher.Data.ServerType switch
         {
-            string id = Guid.NewGuid().ToString()[..8];
-            string LOG_IDENT = $"NotifyIconWrapper::ShowAlert.{id}";
+            ServerType.Public => Strings.ContextMenu_ServerInformation_Notification_Title_Public,
+            ServerType.Private => Strings.ContextMenu_ServerInformation_Notification_Title_Private,
+            ServerType.Reserved => Strings.ContextMenu_ServerInformation_Notification_Title_Reserved,
+            _ => ""
+        };
 
-            App.Logger.WriteLine(LOG_IDENT, $"Showing alert for {duration} seconds (clickHandler={clickHandler is not null})");
-            App.Logger.WriteLine(LOG_IDENT, $"{caption}: {message.Replace("\n", "\\n")}");
+        ShowAlert(
+            title,
+            String.Format(Strings.ContextMenu_ServerInformation_Notification_Text, serverLocation),
+            10,
+            (_, _) => _menuContainer.ShowServerInformationWindow()
+        );
+    }
+    #endregion
 
-            _notifyIcon.BalloonTipTitle = caption;
-            _notifyIcon.BalloonTipText = message;
+    // we may need to create our own handler for this, because this sorta sucks
+    public void ShowAlert(string caption, string message, int duration, EventHandler? clickHandler)
+    {
+        string id = Guid.NewGuid().ToString()[..8];
+        string LOG_IDENT = $"NotifyIconWrapper::ShowAlert.{id}";
 
-            if (_alertClickHandler is not null)
-            {
-                App.Logger.WriteLine(LOG_IDENT, "Previous alert still present, erasing click handler");
-                _notifyIcon.BalloonTipClicked -= _alertClickHandler;
-            }
+        App.Logger.WriteLine(LOG_IDENT, $"Showing alert for {duration} seconds (clickHandler={clickHandler is not null})");
+        App.Logger.WriteLine(LOG_IDENT, $"{caption}: {message.Replace("\n", "\\n")}");
 
-            _alertClickHandler = clickHandler;
-            _notifyIcon.BalloonTipClicked += clickHandler;
+        _notifyIcon.BalloonTipTitle = caption;
+        _notifyIcon.BalloonTipText = message;
 
-            _notifyIcon.ShowBalloonTip(duration);
+        if (_alertClickHandler is not null)
+        {
+            App.Logger.WriteLine(LOG_IDENT, "Previous alert still present, erasing click handler");
+            _notifyIcon.BalloonTipClicked -= _alertClickHandler;
+        }
 
-            Task.Run(async () =>
-            {
-                await Task.Delay(duration * 1000);
+        _alertClickHandler = clickHandler;
+        _notifyIcon.BalloonTipClicked += clickHandler;
+
+        _notifyIcon.ShowBalloonTip(duration);
+
+        Task.Run(async () =>
+        {
+            await Task.Delay(duration * 1000);
              
-                _notifyIcon.BalloonTipClicked -= clickHandler;
+            _notifyIcon.BalloonTipClicked -= clickHandler;
 
-                App.Logger.WriteLine(LOG_IDENT, "Duration over, erasing current click handler");
+            App.Logger.WriteLine(LOG_IDENT, "Duration over, erasing current click handler");
 
-                if (_alertClickHandler == clickHandler)
-                    _alertClickHandler = null;
-                else
-                    App.Logger.WriteLine(LOG_IDENT, "Click handler has been overridden by another alert");
-            });
-        }
+            if (_alertClickHandler == clickHandler)
+                _alertClickHandler = null;
+            else
+                App.Logger.WriteLine(LOG_IDENT, "Click handler has been overridden by another alert");
+        });
+    }
 
-        public void Dispose()
-        {
-            if (_disposing)
-                return;
+    public void Dispose()
+    {
+        if (_disposing)
+            return;
 
-            _disposing = true;
+        _disposing = true;
 
-            App.Logger.WriteLine("NotifyIconWrapper::Dispose", "Disposing NotifyIcon");
+        App.Logger.WriteLine("NotifyIconWrapper::Dispose", "Disposing NotifyIcon");
 
-            _menuContainer.Dispatcher.Invoke(_menuContainer.Close);
-            _notifyIcon.Dispose();
+        _menuContainer.Dispatcher.Invoke(_menuContainer.Close);
+        _notifyIcon.Dispose();
 
-            GC.SuppressFinalize(this);
-        }
+        GC.SuppressFinalize(this);
     }
 }

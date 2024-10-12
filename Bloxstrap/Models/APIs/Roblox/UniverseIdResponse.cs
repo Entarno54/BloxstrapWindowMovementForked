@@ -1,9 +1,8 @@
-﻿namespace Bloxstrap.Models.APIs.Roblox
+﻿namespace Bloxstrap.Models.APIs.Roblox;
+
+// lmao its just one property
+public class UniverseIdResponse
 {
-    // lmao its just one property
-    public class UniverseIdResponse
-    {
-        [JsonPropertyName("universeId")]
-        public long UniverseId { get; set; }
-    }
+    [JsonPropertyName("universeId")]
+    public long UniverseId { get; set; }
 }

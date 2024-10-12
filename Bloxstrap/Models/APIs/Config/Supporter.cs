@@ -1,13 +1,12 @@
-﻿namespace Bloxstrap.Models.APIs.Config
+﻿namespace Bloxstrap.Models.APIs.Config;
+
+public class Supporter
 {
-    public class Supporter
-    {
-        [JsonPropertyName("imageAsset")]
-        public string ImageAsset { get; set; } = null!;
+    [JsonPropertyName("imageAsset")]
+    public string ImageAsset { get; set; } = null!;
 
-        [JsonPropertyName("name")]
-        public string Name { get; set; } = null!;
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = null!;
 
-        public string Image => $"https://raw.githubusercontent.com/bloxstraplabs/config/main/assets/{ImageAsset}";
-    }
+    public string Image => $"https://raw.githubusercontent.com/bloxstraplabs/config/main/assets/{ImageAsset}";
 }

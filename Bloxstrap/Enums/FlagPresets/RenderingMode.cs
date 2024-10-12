@@ -1,10 +1,9 @@
-﻿namespace Bloxstrap.Enums.FlagPresets
+﻿namespace Bloxstrap.Enums.FlagPresets;
+
+public enum RenderingMode
 {
-    public enum RenderingMode
-    {
-        [EnumName(FromTranslation = "Common.Automatic")]
-        Default,
-        D3D11,
-        D3D10,
-    }
+    [EnumName(FromTranslation = "Common.Automatic")]
+    Default,
+    D3D11,
+    D3D10,
 }

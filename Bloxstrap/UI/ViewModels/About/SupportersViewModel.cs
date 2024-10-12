@@ -1,46 +1,45 @@
-﻿namespace Bloxstrap.UI.ViewModels.About
+﻿namespace Bloxstrap.UI.ViewModels.About;
+
+public class SupportersViewModel : NotifyPropertyChangedViewModel
 {
-    public class SupportersViewModel : NotifyPropertyChangedViewModel
-    {
-        public SupporterData? SupporterData { get; private set; }
+    public SupporterData? SupporterData { get; private set; }
         
-        public GenericTriState LoadedState { get; set; } = GenericTriState.Unknown;
+    public GenericTriState LoadedState { get; set; } = GenericTriState.Unknown;
 
-        public string LoadError { get; set; } = "";
+    public string LoadError { get; set; } = "";
 
-        public SupportersViewModel()
+    public SupportersViewModel()
+    {
+        // this will cause momentary freezes only when ran under the debugger
+        LoadSupporterData();
+    }
+
+    public async void LoadSupporterData()
+    {
+        const string LOG_IDENT = "AboutViewModel::LoadSupporterData";
+
+        try
         {
-            // this will cause momentary freezes only when ran under the debugger
-            LoadSupporterData();
+            SupporterData = await Http.GetJson<SupporterData>("https://raw.githubusercontent.com/bloxstraplabs/config/main/supporters.json");
+        }
+        catch (Exception ex)
+        {
+            App.Logger.WriteLine(LOG_IDENT, "Could not load supporter data");
+            App.Logger.WriteException(LOG_IDENT, ex);
+
+            LoadedState = GenericTriState.Failed;
+            LoadError = ex.Message;
+
+            OnPropertyChanged(nameof(LoadError));
         }
 
-        public async void LoadSupporterData()
+        if (SupporterData is not null)
         {
-            const string LOG_IDENT = "AboutViewModel::LoadSupporterData";
-
-            try
-            {
-                SupporterData = await Http.GetJson<SupporterData>("https://raw.githubusercontent.com/bloxstraplabs/config/main/supporters.json");
-            }
-            catch (Exception ex)
-            {
-                App.Logger.WriteLine(LOG_IDENT, "Could not load supporter data");
-                App.Logger.WriteException(LOG_IDENT, ex);
-
-                LoadedState = GenericTriState.Failed;
-                LoadError = ex.Message;
-
-                OnPropertyChanged(nameof(LoadError));
-            }
-
-            if (SupporterData is not null)
-            {
-                LoadedState = GenericTriState.Successful;
+            LoadedState = GenericTriState.Successful;
                 
-                OnPropertyChanged(nameof(SupporterData));
-            }
-
-            OnPropertyChanged(nameof(LoadedState));
+            OnPropertyChanged(nameof(SupporterData));
         }
+
+        OnPropertyChanged(nameof(LoadedState));
     }
 }
