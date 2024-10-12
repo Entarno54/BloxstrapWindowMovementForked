@@ -1,7 +1,7 @@
 ﻿namespace Bloxstrap.Models.BloxstrapRPC;
 
-public class WindowHide
+public class WindowShow
 {
-    [JsonPropertyName("hide")]
-    public bool? Hide { get; set; }
+    [JsonPropertyName("show")]
+    public bool? Show { get; set; }
 }

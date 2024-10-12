@@ -46,7 +46,7 @@ namespace Bloxstrap.Integrations
         private const int SW_MINIMIZE = 6;
 
         private string _lastPopupTitle = "";
-        private System.Windows.Forms.MessageBox? _messagePopup;
+        private System.Windows.Forms.DialogResult? _messagePopup;
 
         public WindowController(ActivityWatcher activityWatcher)
         {
@@ -188,15 +188,15 @@ namespace Bloxstrap.Integrations
                     _lastPopupTitle = title;
                     System.Windows.Forms.MessageBoxButtons buttons = System.Windows.Forms.MessageBoxButtons.OK;
 
-                    _messagePopup = System.Windows.Forms.MessageBox.Show(new Form { TopMost = true }, title, caption, buttons, System.Windows.Forms.MessageBoxIcon.None);
+                    _messagePopup = System.Windows.Forms.MessageBox.Show(new System.Windows.Forms.Form { TopMost = true }, title, caption, buttons, System.Windows.Forms.MessageBoxIcon.None);
                     break;
                 }
                 case "ShowWindow": {
-                    WindowHide? windowData;
+                    WindowShow? windowData;
 
                     try
                     {
-                        windowData = message.Data.Deserialize<WindowHide>();
+                        windowData = message.Data.Deserialize<WindowShow>();
                     }
                     catch (Exception)
                     {
@@ -210,12 +210,12 @@ namespace Bloxstrap.Integrations
                         return;
                     }
 
-                    bool _hideWindow = false;
-                    if (windowData.Hide is not null) {
-                        _hideWindow = (bool) windowData.Hide;
+                    bool _showWindow = true;
+                    if (windowData.Show is not null) {
+                        _showWindow = (bool) windowData.Show;
                     }
 
-                    ShowWindow(_currentWindow, SW_MAXIMIZE);
+                    ShowWindow(_currentWindow, _showWindow ? SW_MINIMIZE : SW_MAXIMIZE);
                     break;
                 }
                 case "MakeWindow": {
