@@ -548,7 +548,7 @@ namespace Bloxstrap.Integrations
         static extern int CloseWindow(IntPtr hWnd);
 
         [DllImport("user32.dll")]
-        static extern int MessageBox(IntPtr? hWnd, string lpText, string lpCaption, uint uType);
+        static extern int MessageBox(IntPtr hWnd, string lpText, string lpCaption, uint uType);
 
         [DllImport("user32.dll", SetLastError = true)]
         internal static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
