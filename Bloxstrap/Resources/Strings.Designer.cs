@@ -2870,11 +2870,20 @@ namespace Bloxstrap.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to This feature requires activity tracking to be enabled and the Discord desktop app to be installed and running. [Find out more]({0})..
+        ///   Looks up a localized string similar to This feature requires activity tracking to be enabled..
         /// </summary>
         public static string Menu_Integrations_RequiresActivityTracking {
             get {
                 return ResourceManager.GetString("Menu.Integrations.RequiresActivityTracking", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to This feature requires activity tracking to be enabled and the Discord desktop app to be installed and running. [Find out more]({0})..
+        /// </summary>
+        public static string Menu_Integrations_RequiresActivityTrackingDiscord {
+            get {
+                return ResourceManager.GetString("Menu.Integrations.RequiresActivityTrackingDiscord", resourceCulture);
             }
         }
         

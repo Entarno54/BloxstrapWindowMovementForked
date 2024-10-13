@@ -41,7 +41,7 @@
         </controls:OptionControl>
 
         <TextBlock Text="{x:Static resources:Strings.Common_DiscordRichPresence}" FontSize="20" FontWeight="Medium" Margin="0,16,0,0" />
-        <controls:MarkdownTextBlock MarkdownText="{Binding Source={x:Static resources:Strings.Menu_Integrations_RequiresActivityTracking}, Converter={StaticResource StringFormatConverter}, ConverterParameter='https://github.com/pizzaboxer/bloxstrap/wiki/What-is-activity-tracking%3F#discord-rich-presence'}" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+        <controls:MarkdownTextBlock MarkdownText="{Binding Source={x:Static resources:Strings.Menu_Integrations_RequiresActivityTrackingDiscord}, Converter={StaticResource StringFormatConverter}, ConverterParameter='https://github.com/pizzaboxer/bloxstrap/wiki/What-is-activity-tracking%3F#discord-rich-presence'}" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
 
         <controls:OptionControl 
             Header="{x:Static resources:Strings.Menu_Integrations_ShowGameActivity_Title}" 
@@ -66,7 +66,7 @@
         </controls:OptionControl>
 
         <TextBlock Text="{x:Static resources:Strings.Common_WindowMovement}" FontSize="20" FontWeight="Medium" Margin="0,16,0,0" />
-        <TextBlock Text="{x:Static resources:Strings.Menu_Integrations_RequiresActivityTracking}" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+        <controls:MarkdownTextBlock MarkdownText="{Binding Source={x:Static resources:Strings.Menu_Integrations_RequiresActivityTracking}, Converter={StaticResource StringFormatConverter}, ConverterParameter='https://github.com/pizzaboxer/bloxstrap/wiki/What-is-activity-tracking%3F'}" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
 
         <controls:OptionControl 
             Header="{x:Static resources:Strings.Menu_Integrations_GameWindowControl_Title}" 

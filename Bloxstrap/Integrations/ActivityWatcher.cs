@@ -152,10 +152,12 @@ public class ActivityWatcher : IDisposable
 
         // debug stats to ensure that the log reader is working correctly
         // if more than 1000 log entries have been read, only log per 100 to save on spam
+        #if DEBUG
         if (_logEntriesRead <= 1000 && _logEntriesRead % 50 == 0)
             App.Logger.WriteLine(LOG_IDENT, $"Read {_logEntriesRead} log entries");
         else if (_logEntriesRead % 100 == 0)
             App.Logger.WriteLine(LOG_IDENT, $"Read {_logEntriesRead} log entries");
+        #endif
 
         if (entry.Contains(GameLeavingEntry))
         {
