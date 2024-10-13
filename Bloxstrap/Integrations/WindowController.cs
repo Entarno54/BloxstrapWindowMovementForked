@@ -103,6 +103,12 @@ namespace Bloxstrap.Integrations
             }
             
             App.Logger.WriteLine("WindowController::onWindowFound", $"WinSize X:{_lastX} Y:{_lastY} W:{_lastWidth} H:{_lastHeight} sW:{screenSizeX} sH:{screenSizeY}");
+
+            _activityWatcher.OnAppClose += delegate
+            {
+                App.Logger.WriteLine("WindowController", "User is back into the desktop app, resetting window");
+                resetWindow();
+            };
         }
 
         public void resetWindow() {
@@ -134,6 +140,15 @@ namespace Bloxstrap.Integrations
             ShowWindow(_currentWindow, SW_MAXIMIZE);
 
             SendMessage(_currentWindow, WM_SETTEXT, IntPtr.Zero, "Roblox");
+
+            //reset window color
+            if (App.Settings.Prop.CanGameChangeColor) {
+                _lastWindowCaptionColor = Convert.ToUInt32(appTheme == Theme.Dark ? "1F1F1F" : "FFFFFF", 16);
+                DwmSetWindowAttribute(_currentWindow, 35, ref _lastWindowCaptionColor, sizeof(int));
+                
+                _lastWindowBorderColor = Convert.ToUInt32("1F1F1F", 16);
+                DwmSetWindowAttribute(_currentWindow, 34, ref _lastWindowBorderColor, sizeof(int));
+            }
         }
 
         private List<System.Windows.Forms.Form> forms = new();
