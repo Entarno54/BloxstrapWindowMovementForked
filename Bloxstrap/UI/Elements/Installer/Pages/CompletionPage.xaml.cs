@@ -24,13 +24,12 @@ public partial class CompletionPage
         InitializeComponent();
     }
 
-        private void UiPage_Loaded(object sender, RoutedEventArgs e)
+    private void UiPage_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (Window.GetWindow(this) is MainWindow window)
         {
-            if (Window.GetWindow(this) is MainWindow window)
-            {
-                window.SetNextButtonText(Strings.Common_Navigation_Next);
-                window.SetButtonEnabled("back", false);
-            }
+            window.SetNextButtonText(Strings.Common_Navigation_Next);
+            window.SetButtonEnabled("back", false);
         }
     }
 }

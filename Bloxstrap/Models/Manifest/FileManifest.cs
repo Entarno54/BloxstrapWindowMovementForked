@@ -1,12 +1,11 @@
 using Bloxstrap.RobloxInterfaces;
 
-namespace Bloxstrap.Models.Manifest
+namespace Bloxstrap.Models.Manifest;
+public class FileManifest : List<ManifestFile>
 {
-    public class FileManifest : List<ManifestFile>
+    private FileManifest(string data)
     {
-        private FileManifest(string data)
-        {
-            using StringReader reader = new StringReader(data);
+        using StringReader reader = new StringReader(data);
 
         while (true)
         {
@@ -24,10 +23,10 @@ namespace Bloxstrap.Models.Manifest
         }
     }
 
-        public static async Task<FileManifest> Get(string versionGuid)
-        {
-            string pkgManifestUrl = Deployment.GetLocation($"/{versionGuid}-rbxManifest.txt");
-            var pkgManifestData = await App.HttpClient.GetStringAsync(pkgManifestUrl);
+    public static async Task<FileManifest> Get(string versionGuid)
+    {
+        string pkgManifestUrl = Deployment.GetLocation($"/{versionGuid}-rbxManifest.txt");
+        var pkgManifestData = await App.HttpClient.GetStringAsync(pkgManifestUrl);
 
         return new FileManifest(pkgManifestData);
     }

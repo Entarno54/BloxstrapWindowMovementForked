@@ -1,4 +1,4 @@
-﻿using Bloxstrap.Integrations;
+﻿﻿using Bloxstrap.Integrations;
 using Bloxstrap.Models;
 
 namespace Bloxstrap
@@ -11,21 +11,21 @@ namespace Bloxstrap
         
         private readonly NotifyIconWrapper? _notifyIcon;
 
-    public readonly ActivityWatcher? ActivityWatcher;
+        public readonly ActivityWatcher? ActivityWatcher;
 
-    public readonly DiscordRichPresence? RichPresence;
+        public readonly DiscordRichPresence? RichPresence;
 
-    public readonly WindowController? WindowController;
+        public readonly WindowController? WindowController;
 
-    public Watcher()
-    {
-        const string LOG_IDENT = "Watcher";
-
-        if (!_lock.IsAcquired)
+        public Watcher()
         {
-            App.Logger.WriteLine(LOG_IDENT, "Watcher instance already exists");
-            return;
-        }
+            const string LOG_IDENT = "Watcher";
+
+            if (!_lock.IsAcquired)
+            {
+                App.Logger.WriteLine(LOG_IDENT, "Watcher instance already exists");
+                return;
+            }
 
             string? watcherDataArg = App.LaunchSettings.WatcherFlag.Data;
 
@@ -62,15 +62,15 @@ namespace Bloxstrap
                     };
                 }
 
-            if (App.Settings.Prop.UseDiscordRichPresence)
-                RichPresence = new(ActivityWatcher);
+                if (App.Settings.Prop.UseDiscordRichPresence)
+                    RichPresence = new(ActivityWatcher);
 
-            if (App.Settings.Prop.CanGameMoveWindow || App.Settings.Prop.CanGameSetWindowTitle || App.Settings.Prop.CanGameChangeColor) 
-                WindowController = new(ActivityWatcher);
+                if (App.Settings.Prop.CanGameMoveWindow || App.Settings.Prop.CanGameSetWindowTitle) 
+                    WindowController = new(ActivityWatcher);
+            }
+
+            _notifyIcon = new(this);
         }
-
-        _notifyIcon = new(this);
-    }
 
         public void KillRobloxProcess() => CloseProcess(_watcherData!.ProcessId, true);
 
@@ -82,32 +82,32 @@ namespace Bloxstrap
             {
                 using var process = Process.GetProcessById(pid);
 
-            App.Logger.WriteLine(LOG_IDENT, $"Killing process '{process.ProcessName}' (pid={pid}, force={force})");
+                App.Logger.WriteLine(LOG_IDENT, $"Killing process '{process.ProcessName}' (pid={pid}, force={force})");
 
-            if (process.HasExited)
-            {
-                App.Logger.WriteLine(LOG_IDENT, $"PID {pid} has already exited");
-                return;
+                if (process.HasExited)
+                {
+                    App.Logger.WriteLine(LOG_IDENT, $"PID {pid} has already exited");
+                    return;
+                }
+
+                if (force)
+                    process.Kill();
+                else
+                    process.CloseMainWindow();
             }
-
-            if (force)
-                process.Kill();
-            else
-                process.CloseMainWindow();
+            catch (Exception ex)
+            {
+                App.Logger.WriteLine(LOG_IDENT, $"PID {pid} could not be closed");
+                App.Logger.WriteException(LOG_IDENT, ex);
+            }
         }
-        catch (Exception ex)
-        {
-            App.Logger.WriteLine(LOG_IDENT, $"PID {pid} could not be closed");
-            App.Logger.WriteException(LOG_IDENT, ex);
-        }
-    }
 
         public async Task Run()
         {
             if (!_lock.IsAcquired || _watcherData is null)
                 return;
 
-        ActivityWatcher?.Start();
+            ActivityWatcher?.Start();
 
             while (Utilities.GetProcessesSafe().Any(x => x.Id == _watcherData.ProcessId))
                 await Task.Delay(1000);
@@ -118,18 +118,19 @@ namespace Bloxstrap
                     CloseProcess(pid);
             }
 
-        if (App.LaunchSettings.TestModeFlag.Active)
-            Process.Start(Paths.Process, "-settings -testmode");
-    }
+            if (App.LaunchSettings.TestModeFlag.Active)
+                Process.Start(Paths.Process, "-settings -testmode");
+        }
 
-    public void Dispose()
-    {
-        App.Logger.WriteLine("Watcher::Dispose", "Disposing Watcher");
+        public void Dispose()
+        {
+            App.Logger.WriteLine("Watcher::Dispose", "Disposing Watcher");
 
-        _notifyIcon?.Dispose();
-        RichPresence?.Dispose();
-        WindowController?.Dispose();
+            _notifyIcon?.Dispose();
+            RichPresence?.Dispose();
+            WindowController?.Dispose();
 
-        GC.SuppressFinalize(this);
+            GC.SuppressFinalize(this);
+        }
     }
 }

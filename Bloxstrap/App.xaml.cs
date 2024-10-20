@@ -6,23 +6,22 @@ using System.Windows.Threading;
 
 using Microsoft.Win32;
 
-namespace Bloxstrap
-{
+namespace Bloxstrap;
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
-    public partial class App : Application
-    {
-#if QA_BUILD
-        public const string ProjectName = "Bloxstrap-QA";
-#else
-        public const string ProjectName = "Bloxstrap";
-#endif
-        public const string ProjectOwner = "Bloxstrap";
-        public const string ProjectRepository = "bloxstraplabs/bloxstrap";
-        public const string ProjectDownloadLink = "https://bloxstraplabs.com";
-        public const string ProjectHelpLink = "https://github.com/bloxstraplabs/bloxstrap/wiki";
-        public const string ProjectSupportLink = "https://github.com/bloxstraplabs/bloxstrap/issues/new";
+public partial class App : Application
+{
+    #if QA_BUILD
+    public const string ProjectName = "Bloxstrap-QA";
+    #else
+    public const string ProjectName = "Bloxstrap";
+    #endif
+    public const string ProjectOwner = "Bloxstrap";
+    public const string ProjectRepository = "bloxstraplabs/bloxstrap";
+    public const string ProjectDownloadLink = "https://bloxstraplabs.com";
+    public const string ProjectHelpLink = "https://github.com/bloxstraplabs/bloxstrap/wiki";
+    public const string ProjectSupportLink = "https://github.com/bloxstraplabs/bloxstrap/issues/new";
 
     public const string RobloxPlayerAppName = "RobloxPlayerBeta";
     public const string RobloxStudioAppName = "RobloxStudioBeta";

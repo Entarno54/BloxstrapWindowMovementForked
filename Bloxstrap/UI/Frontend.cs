@@ -3,6 +3,8 @@
 using Bloxstrap.UI.Elements.Bootstrapper;
 using Bloxstrap.UI.Elements.Dialogs;
 
+namespace Bloxstrap.UI;
+
 static class Frontend
 {
     public static MessageBoxResult ShowMessageBox(string message, MessageBoxImage icon = MessageBoxImage.None, MessageBoxButton buttons = MessageBoxButton.OK, MessageBoxResult defaultResult = MessageBoxResult.None)

@@ -1,15 +1,14 @@
 ﻿using System.Windows;
 using Microsoft.Win32;
 
-namespace Bloxstrap
+namespace Bloxstrap;
+internal class Installer
 {
-    internal class Installer
-    {
-        private static string DesktopShortcut => Path.Combine(Paths.Desktop, $"{App.ProjectName}.lnk");
+    private static string DesktopShortcut => Path.Combine(Paths.Desktop, $"{App.ProjectName}.lnk");
 
-        private static string StartMenuShortcut => Path.Combine(Paths.WindowsStartMenu, $"{App.ProjectName}.lnk");
+    private static string StartMenuShortcut => Path.Combine(Paths.WindowsStartMenu, $"{App.ProjectName}.lnk");
 
-        public string InstallLocation = Path.Combine(Paths.LocalAppData, App.ProjectName);
+    public string InstallLocation = Path.Combine(Paths.LocalAppData, App.ProjectName);
 
     public bool ExistingDataPresent => File.Exists(Path.Combine(InstallLocation, "Settings.json"));
 

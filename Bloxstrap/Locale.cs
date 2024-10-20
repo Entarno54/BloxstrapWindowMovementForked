@@ -4,71 +4,71 @@ internal static class Locale
 {
     public static CultureInfo CurrentCulture { get; private set; } = CultureInfo.InvariantCulture;
 
-        public static bool RightToLeft { get; private set; } = false;
+    public static bool RightToLeft { get; private set; } = false;
 
-        private static readonly List<string> _rtlLocales = new() { "ar", "he", "fa" };
+    private static readonly List<string> _rtlLocales = new() { "ar", "he", "fa" };
 
-        public static readonly Dictionary<string, string> SupportedLocales = new()
-        {
-            { "nil", Strings.Common_SystemDefault },
-            { "en", "English" },
-            { "en-US", "English (United States)" },
-            { "ar", "العربية" },
-            { "bg", "Български" },
+    public static readonly Dictionary<string, string> SupportedLocales = new()
+    {
+        { "nil", Strings.Common_SystemDefault },
+        { "en", "English" },
+        { "en-US", "English (United States)" },
+        { "ar", "العربية" },
+        { "bg", "Български" },
 #if QA_BUILD
-            { "bn", "বাংলা" },
-            { "bs", "Bosanski" },
+        { "bn", "বাংলা" },
+        { "bs", "Bosanski" },
 #endif
-            { "cs", "Čeština" },
-            { "de", "Deutsch" },
+        { "cs", "Čeština" },
+        { "de", "Deutsch" },
 #if QA_BUILD
-            { "dk", "Dansk" },
+        { "dk", "Dansk" },
 #endif
-            { "es-ES", "Español" },
+        { "es-ES", "Español" },
 #if QA_BUILD
-            { "el", "Ελληνικά" },
-            { "fa", "فارسی" },
+        { "el", "Ελληνικά" },
+        { "fa", "فارسی" },
 #endif
-            { "fi", "Suomi" },
+        { "fi", "Suomi" },
 #if QA_BUILD
-            { "fil", "Filipino" },
+        { "fil", "Filipino" },
 #endif
-            { "fr", "Français" },
-            { "he", "עברית‎" },
+        { "fr", "Français" },
+        { "he", "עברית‎" },
 #if QA_BUILD
-            { "hi", "Hindi (Latin)" },
+        { "hi", "Hindi (Latin)" },
 #endif
-            { "hr", "Hrvatski" },
-            { "hu", "Magyar" },
+        { "hr", "Hrvatski" },
+        { "hu", "Magyar" },
 #if QA_BUILD
-            { "id", "Bahasa Indonesia" },
+        { "id", "Bahasa Indonesia" },
 #endif
-            { "it", "Italiano" },
-            { "ja", "日本語" },
+        { "it", "Italiano" },
+        { "ja", "日本語" },
 #if QA_BUILD
-            { "ko", "한국어" },
+        { "ko", "한국어" },
 #endif
-            { "lt", "Lietuvių" },
-            { "ms", "Malay" },
+        { "lt", "Lietuvių" },
+        { "ms", "Malay" },
 #if QA_BUILD
-            { "nl", "Nederlands" },
-            { "no", "Bokmål" },
+        { "nl", "Nederlands" },
+        { "no", "Bokmål" },
 #endif
-            { "pl", "Polski" },
-            { "pt-BR", "Português (Brasil)" },
-            { "ro", "Română" },
-            { "ru", "Русский" },
-            { "sv-SE", "Svenska" },
-            { "th", "ภาษาไทย" },
-            { "tr", "Türkçe" },
-            { "uk", "Українська" },
-            { "vi", "Tiếng Việt" },
-            { "zh-CN", "中文 (简体)" },
+        { "pl", "Polski" },
+        { "pt-BR", "Português (Brasil)" },
+        { "ro", "Română" },
+        { "ru", "Русский" },
+        { "sv-SE", "Svenska" },
+        { "th", "ภาษาไทย" },
+        { "tr", "Türkçe" },
+        { "uk", "Українська" },
+        { "vi", "Tiếng Việt" },
+        { "zh-CN", "中文 (简体)" },
 #if QA_BUILD
-            { "zh-HK", "中文 (廣東話)" },
+        { "zh-HK", "中文 (廣東話)" },
 #endif
-            { "zh-TW", "中文 (繁體)" }
-        };
+        { "zh-TW", "中文 (繁體)" }
+    };
 
     public static string GetIdentifierFromName(string language) => SupportedLocales.FirstOrDefault(x => x.Value == language).Key ?? "nil";
 
@@ -100,8 +100,8 @@ internal static class Locale
             Thread.CurrentThread.CurrentUICulture = CurrentCulture;
         }
 
-            RightToLeft = _rtlLocales.Any(CurrentCulture.Name.StartsWith);
-        }
+        RightToLeft = _rtlLocales.Any(CurrentCulture.Name.StartsWith);
+    }
 
     public static void Initialize()
     {
@@ -116,19 +116,18 @@ internal static class Locale
             {
                 window.FlowDirection = FlowDirection.RightToLeft;
 
-                    if (window.ContextMenu is not null)
-                        window.ContextMenu.FlowDirection = FlowDirection.RightToLeft;
-                }
-                else if (CurrentCulture.Name.StartsWith("th"))
-                {
-                    window.FontFamily = new System.Windows.Media.FontFamily(new Uri("pack://application:,,,/Resources/Fonts/"), "./#Noto Sans Thai");
-                }
+                if (window.ContextMenu is not null)
+                    window.ContextMenu.FlowDirection = FlowDirection.RightToLeft;
+            }
+            else if (CurrentCulture.Name.StartsWith("th"))
+            {
+                window.FontFamily = new System.Windows.Media.FontFamily(new Uri("pack://application:,,,/Resources/Fonts/"), "./#Noto Sans Thai");
+            }
 
-#if QA_BUILD
-                window.BorderBrush = System.Windows.Media.Brushes.Red;
-                window.BorderThickness = new Thickness(4);
-#endif
-            }));
-        }
+            #if QA_BUILD
+            window.BorderBrush = System.Windows.Media.Brushes.Red;
+            window.BorderThickness = new Thickness(4);
+            #endif
+        }));
     }
 }
