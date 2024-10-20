@@ -11,6 +11,8 @@ public class MainWindowViewModel : NotifyPropertyChangedViewModel
 
     public bool NextButtonEnabled { get; private set; } = false;
 
+        public int ButtonWidth { get; } = Locale.CurrentCulture.Name.StartsWith("bg") ? 112 : 96;
+
     public ICommand BackPageCommand => new RelayCommand(BackPage);
         
     public ICommand NextPageCommand => new RelayCommand(NextPage);

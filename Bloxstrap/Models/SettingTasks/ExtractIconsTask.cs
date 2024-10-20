@@ -2,39 +2,44 @@
 
 namespace Bloxstrap.Models.SettingTasks;
 
-public class ExtractIconsTask : BoolBaseTask
+namespace Bloxstrap.Models.SettingTasks
 {
-    public ExtractIconsTask() : base("ExtractIcons")
+    public class ExtractIconsTask : BoolBaseTask
     {
-        OriginalState = Directory.Exists(Paths.Icons);
-    }
+        private string _path => Path.Combine(Paths.Base, Strings.Paths_Icons);
 
-    public override void Execute()
-    {
-        if (NewState)
+        public ExtractIconsTask() : base("ExtractIcons")
         {
-            Directory.CreateDirectory(Paths.Icons);
+            OriginalState = Directory.Exists(_path);
+        }
 
-            var assembly = Assembly.GetExecutingAssembly();
-            var resourceNames = assembly.GetManifestResourceNames().Where(x => x.EndsWith(".ico"));
-
-            foreach (string name in resourceNames)
+        public override void Execute()
+        {
+            if (NewState)
             {
-                string path = Path.Combine(Paths.Icons, name.Replace("Bloxstrap.Resources.", ""));
-                var stream = assembly.GetManifestResourceStream(name)!;
+                Directory.CreateDirectory(_path);
 
-                using var memoryStream = new MemoryStream();
-                stream.CopyTo(memoryStream);
+                var assembly = Assembly.GetExecutingAssembly();
+                var resourceNames = assembly.GetManifestResourceNames().Where(x => x.EndsWith(".ico"));
 
-                Filesystem.AssertReadOnly(path);
-                File.WriteAllBytes(path, memoryStream.ToArray());
+                foreach (string name in resourceNames)
+                {
+                    string path = Path.Combine(_path, name.Replace("Bloxstrap.Resources.", ""));
+                    var stream = assembly.GetManifestResourceStream(name)!;
+
+                    using var memoryStream = new MemoryStream();
+                    stream.CopyTo(memoryStream);
+
+                    Filesystem.AssertReadOnly(path);
+                    File.WriteAllBytes(path, memoryStream.ToArray());
+                }
             }
-        }
-        else if (Directory.Exists(Paths.Icons))
-        {
-            Directory.Delete(Paths.Icons, true);
-        }
+            else if (Directory.Exists(_path))
+            {
+                Directory.Delete(_path, true);
+            }
 
-        OriginalState = NewState;
+            OriginalState = NewState;
+        }
     }
 }

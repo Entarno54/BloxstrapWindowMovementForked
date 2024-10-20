@@ -1,53 +1,74 @@
 ﻿using System.Windows;
 
-namespace Bloxstrap;
-
 internal static class Locale
 {
     public static CultureInfo CurrentCulture { get; private set; } = CultureInfo.InvariantCulture;
 
-    public static bool RightToLeft { get; private set; } = false;
+        public static bool RightToLeft { get; private set; } = false;
 
-    public static readonly Dictionary<string, string> SupportedLocales = new()
-    {
-        { "nil", Strings.Common_SystemDefault },
-        { "en", "English" },
-        { "en-US", "English (United States)" },
-        { "ar", "العربية" },
-        { "bg", "Български" },
-        { "bn", "বাংলা" },
-        { "bs", "Bosanski" },
-        // { "cs", "Čeština" },
-        { "de", "Deutsch" },
-        // { "dk", "Dansk" },
-        { "es-ES", "Español" },
-        { "fi", "Suomi" },
-        { "fil", "Filipino" },
-        { "fr", "Français" },
-        { "he", "עברית‎" },
-        { "hi", "Hindi (Latin)" },
-        { "hr", "Hrvatski" },
-        { "hu", "Magyar" },
-        { "id", "Bahasa Indonesia" },
-        { "it", "Italiano" },
-        { "ja", "日本語" },
-        { "ko", "한국어" },
-        { "lt", "Lietuvių" },
-        { "no", "Bokmål" },
-        // { "nl", "Nederlands" },
-        { "pl", "Polski" },
-        { "pt-BR", "Português (Brasil)" },
-        { "ro", "Română" },
-        { "ru", "Русский" },
-        { "sv-SE", "Svenska" },
-        { "th", "ภาษาไทย" },
-        { "tr", "Türkçe" },
-        { "uk", "Українська" },
-        { "vi", "Tiếng Việt" },
-        { "zh-CN", "中文 (简体)" },
-        { "zh-HK", "中文 (廣東話)" },
-        { "zh-TW", "中文 (繁體)" }
-    };
+        private static readonly List<string> _rtlLocales = new() { "ar", "he", "fa" };
+
+        public static readonly Dictionary<string, string> SupportedLocales = new()
+        {
+            { "nil", Strings.Common_SystemDefault },
+            { "en", "English" },
+            { "en-US", "English (United States)" },
+            { "ar", "العربية" },
+            { "bg", "Български" },
+#if QA_BUILD
+            { "bn", "বাংলা" },
+            { "bs", "Bosanski" },
+#endif
+            { "cs", "Čeština" },
+            { "de", "Deutsch" },
+#if QA_BUILD
+            { "dk", "Dansk" },
+#endif
+            { "es-ES", "Español" },
+#if QA_BUILD
+            { "el", "Ελληνικά" },
+            { "fa", "فارسی" },
+#endif
+            { "fi", "Suomi" },
+#if QA_BUILD
+            { "fil", "Filipino" },
+#endif
+            { "fr", "Français" },
+            { "he", "עברית‎" },
+#if QA_BUILD
+            { "hi", "Hindi (Latin)" },
+#endif
+            { "hr", "Hrvatski" },
+            { "hu", "Magyar" },
+#if QA_BUILD
+            { "id", "Bahasa Indonesia" },
+#endif
+            { "it", "Italiano" },
+            { "ja", "日本語" },
+#if QA_BUILD
+            { "ko", "한국어" },
+#endif
+            { "lt", "Lietuvių" },
+            { "ms", "Malay" },
+#if QA_BUILD
+            { "nl", "Nederlands" },
+            { "no", "Bokmål" },
+#endif
+            { "pl", "Polski" },
+            { "pt-BR", "Português (Brasil)" },
+            { "ro", "Română" },
+            { "ru", "Русский" },
+            { "sv-SE", "Svenska" },
+            { "th", "ภาษาไทย" },
+            { "tr", "Türkçe" },
+            { "uk", "Українська" },
+            { "vi", "Tiếng Việt" },
+            { "zh-CN", "中文 (简体)" },
+#if QA_BUILD
+            { "zh-HK", "中文 (廣東話)" },
+#endif
+            { "zh-TW", "中文 (繁體)" }
+        };
 
     public static string GetIdentifierFromName(string language) => SupportedLocales.FirstOrDefault(x => x.Value == language).Key ?? "nil";
 
@@ -79,8 +100,8 @@ internal static class Locale
             Thread.CurrentThread.CurrentUICulture = CurrentCulture;
         }
 
-        RightToLeft = CurrentCulture.Name.StartsWith("ar") || CurrentCulture.Name.StartsWith("he");
-    }
+            RightToLeft = _rtlLocales.Any(CurrentCulture.Name.StartsWith);
+        }
 
     public static void Initialize()
     {
@@ -95,13 +116,19 @@ internal static class Locale
             {
                 window.FlowDirection = FlowDirection.RightToLeft;
 
-                if (window.ContextMenu is not null)
-                    window.ContextMenu.FlowDirection = FlowDirection.RightToLeft;
-            }
-            else if (CurrentCulture.Name.StartsWith("th"))
-            {
-                window.FontFamily = new System.Windows.Media.FontFamily(new Uri("pack://application:,,,/Resources/Fonts/"), "./#Noto Sans Thai");
-            }
-        }));
+                    if (window.ContextMenu is not null)
+                        window.ContextMenu.FlowDirection = FlowDirection.RightToLeft;
+                }
+                else if (CurrentCulture.Name.StartsWith("th"))
+                {
+                    window.FontFamily = new System.Windows.Media.FontFamily(new Uri("pack://application:,,,/Resources/Fonts/"), "./#Noto Sans Thai");
+                }
+
+#if QA_BUILD
+                window.BorderBrush = System.Windows.Media.Brushes.Red;
+                window.BorderThickness = new Thickness(4);
+#endif
+            }));
+        }
     }
 }

@@ -34,9 +34,9 @@ internal class ServerHistoryViewModel : NotifyPropertyChangedViewModel
 
         var entries = _activityWatcher.History.Where(x => x.UniverseDetails is null);
 
-        if (entries.Any())
-        {
-            string universeIds = String.Join(',', entries.GroupBy(x => x.UniverseId).Select(x => x.First()));
+            if (entries.Any())
+            {
+                string universeIds = String.Join(',', entries.Select(x => x.UniverseId).Distinct());
 
             try
             {

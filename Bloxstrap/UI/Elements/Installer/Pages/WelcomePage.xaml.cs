@@ -22,10 +22,10 @@ public partial class WelcomePage
         InitializeComponent();
     }
 
-    private void UiPage_Loaded(object sender, RoutedEventArgs e)
-    {
-        if (Window.GetWindow(this) is MainWindow window)
-            window.SetNextButtonText("Next");
+        private void UiPage_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (Window.GetWindow(this) is MainWindow window)
+                window.SetNextButtonText(Strings.Common_Navigation_Next);
 
         _viewModel.DoChecks();
     }

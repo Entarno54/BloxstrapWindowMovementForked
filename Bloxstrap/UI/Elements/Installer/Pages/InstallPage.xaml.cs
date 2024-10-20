@@ -23,14 +23,14 @@ public partial class InstallPage
         InitializeComponent();
     }
 
-    private void UiPage_Loaded(object sender, RoutedEventArgs e)
-    {
-        if (Window.GetWindow(this) is MainWindow window)
+        private void UiPage_Loaded(object sender, RoutedEventArgs e)
         {
-            window.SetNextButtonText("Install");
-            window.NextPageCallback += NextPageCallback;
+            if (Window.GetWindow(this) is MainWindow window)
+            {
+                window.SetNextButtonText(Strings.Common_Navigation_Install);
+                window.NextPageCallback += NextPageCallback;
+            }
         }
-    }
 
     public bool NextPageCallback() => _viewModel.DoInstall();
 }

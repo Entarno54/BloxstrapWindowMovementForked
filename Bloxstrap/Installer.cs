@@ -1,15 +1,15 @@
 ﻿using System.Windows;
 using Microsoft.Win32;
 
-namespace Bloxstrap;
-
-internal class Installer
+namespace Bloxstrap
 {
-    private static string DesktopShortcut => Path.Combine(Paths.Desktop, "Bloxstrap.lnk");
+    internal class Installer
+    {
+        private static string DesktopShortcut => Path.Combine(Paths.Desktop, $"{App.ProjectName}.lnk");
 
-    private static string StartMenuShortcut => Path.Combine(Paths.WindowsStartMenu, "Bloxstrap.lnk");
+        private static string StartMenuShortcut => Path.Combine(Paths.WindowsStartMenu, $"{App.ProjectName}.lnk");
 
-    public string InstallLocation = Path.Combine(Paths.LocalAppData, "Bloxstrap");
+        public string InstallLocation = Path.Combine(Paths.LocalAppData, App.ProjectName);
 
     public bool ExistingDataPresent => File.Exists(Path.Combine(InstallLocation, "Settings.json"));
 
@@ -52,11 +52,10 @@ internal class Installer
             }
         }
 
-        // TODO: registry access checks, i'll need to look back on issues to see what the error looks like
-        using (var uninstallKey = Registry.CurrentUser.CreateSubKey(App.UninstallKey))
-        {
-            uninstallKey.SetValueSafe("DisplayIcon", $"{Paths.Application},0");
-            uninstallKey.SetValueSafe("DisplayName", App.ProjectName);
+            using (var uninstallKey = Registry.CurrentUser.CreateSubKey(App.UninstallKey))
+            {
+                uninstallKey.SetValueSafe("DisplayIcon", $"{Paths.Application},0");
+                uninstallKey.SetValueSafe("DisplayName", App.ProjectName);
 
             uninstallKey.SetValueSafe("DisplayVersion", App.Version);
 
@@ -301,13 +300,7 @@ internal class Installer
             });
         }
 
-        bool deleteFolder = false;
-
-        if (Directory.Exists(Paths.Base))
-        {
-            var folderFiles = Directory.GetFiles(Paths.Base);
-            deleteFolder = folderFiles.Length == 1 && folderFiles.First().EndsWith(".exe", StringComparison.InvariantCultureIgnoreCase);
-        }
+            bool deleteFolder = Directory.GetFiles(Paths.Base).Length <= 3;
 
         if (deleteFolder)
             cleanupSequence.Add(() => Directory.Delete(Paths.Base, true));
@@ -360,10 +353,13 @@ internal class Installer
         if (!File.Exists(Paths.Application) || Paths.Process == Paths.Application)
             return;
 
-        // 2.0.0 downloads updates to <BaseFolder>/Updates so lol
-        bool isAutoUpgrade = App.LaunchSettings.UpgradeFlag.Active
-                             || Paths.Process.StartsWith(Path.Combine(Paths.Base, "Updates"))
-                             || Paths.Process.StartsWith(Paths.Temp);
+            // 2.0.0 downloads updates to <BaseFolder>/Updates so lol
+            bool isAutoUpgrade = App.LaunchSettings.UpgradeFlag.Active
+                || Paths.Process.StartsWith(Path.Combine(Paths.Base, "Updates"))
+                || Paths.Process.StartsWith(Path.Combine(Paths.LocalAppData, "Temp"))
+                || Paths.Process.StartsWith(Paths.TempUpdates);
+
+            isAutoUpgrade = true;
 
         var existingVer = FileVersionInfo.GetVersionInfo(Paths.Application).ProductVersion;
         var currentVer = FileVersionInfo.GetVersionInfo(Paths.Process).ProductVersion;
@@ -522,10 +518,24 @@ internal class Installer
                     App.FastFlags.SetPreset("Rendering.Framerate", null);
             }
 
-            if (Utilities.CompareVersions(existingVer, "2.8.0") == VersionComparison.LessThan)
-            {
-                string oldDesktopPath = Path.Combine(Paths.Desktop, "Play Roblox.lnk");
-                string oldStartPath = Path.Combine(Paths.WindowsStartMenu, "Bloxstrap");
+                if (Utilities.CompareVersions(existingVer, "2.8.0") == VersionComparison.LessThan)
+                {
+                    if (isAutoUpgrade)
+                    {
+                        if (App.LaunchSettings.Args.Length == 0)
+                            App.LaunchSettings.RobloxLaunchMode = LaunchMode.Player;
+
+                        string? query = App.LaunchSettings.Args.FirstOrDefault(x => x.Contains("roblox"));
+
+                        if (query is not null)
+                        {
+                            App.LaunchSettings.RobloxLaunchMode = LaunchMode.Player;
+                            App.LaunchSettings.RobloxLaunchArgs = query;
+                        }
+                    }
+
+                    string oldDesktopPath = Path.Combine(Paths.Desktop, "Play Roblox.lnk");
+                    string oldStartPath = Path.Combine(Paths.WindowsStartMenu, "Bloxstrap");
 
                 if (File.Exists(oldDesktopPath))
                     File.Move(oldDesktopPath, DesktopShortcut, true);
@@ -564,13 +574,23 @@ internal class Installer
                         App.FastFlags.SetPreset("UI.Menu.Style.V2Rollout", "100");
                     }
 
-                    App.FastFlags.SetValue("FFlagDisableNewIGMinDUA", null);
-                }
+                        if (App.FastFlags.GetPreset("UI.Menu.Style.ABTest.1") is not null)
+                            App.FastFlags.SetPreset("UI.Menu.Style.ABTest", "False");
+
+                        App.FastFlags.SetValue("FFlagDisableNewIGMinDUA", null);
+                    }
 
                 App.FastFlags.SetValue("FFlagFixGraphicsQuality", null);
 
-                Directory.Delete(Path.Combine(Paths.Base, "Versions"));
-            }
+                    try
+                    {
+                        Directory.Delete(Path.Combine(Paths.Base, "Versions"), true);
+                    }
+                    catch (Exception ex)
+                    {
+                        App.Logger.WriteException(LOG_IDENT, ex);
+                    }
+                }
 
             App.Settings.Save();
             App.FastFlags.Save();

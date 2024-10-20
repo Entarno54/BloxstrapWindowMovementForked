@@ -3,8 +3,6 @@
 using Bloxstrap.UI.Elements.Bootstrapper;
 using Bloxstrap.UI.Elements.Dialogs;
 
-namespace Bloxstrap.UI;
-
 static class Frontend
 {
     public static MessageBoxResult ShowMessageBox(string message, MessageBoxImage icon = MessageBoxImage.None, MessageBoxButton buttons = MessageBoxButton.OK, MessageBoxResult defaultResult = MessageBoxResult.None)
@@ -27,9 +25,10 @@ static class Frontend
         if (crash)
             topLine = Strings.Dialog_PlayerError_Crash;
 
-        ShowMessageBox($"{topLine}\n\n{Strings.Dialog_PlayerError_HelpInformation}", MessageBoxImage.Error);
-        Utilities.ShellExecute($"https://github.com/{App.ProjectRepository}/wiki/Roblox-crashes-or-does-not-launch");
-    }
+            ShowMessageBox($"{topLine}\n\n{Strings.Dialog_PlayerError_HelpInformation}", MessageBoxImage.Error);
+
+            Utilities.ShellExecute($"https://github.com/{App.ProjectRepository}/wiki/Roblox-crashes-or-does-not-launch");
+        }
 
     public static void ShowExceptionDialog(Exception exception)
     {

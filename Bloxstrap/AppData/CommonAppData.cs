@@ -1,14 +1,21 @@
-﻿namespace Bloxstrap.AppData;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-public abstract class CommonAppData
+namespace Bloxstrap.AppData
 {
-    // in case a new package is added, you can find the corresponding directory
-    // by opening the stock bootstrapper in a hex editor
-    private IReadOnlyDictionary<string, string> _commonMap { get; } = new Dictionary<string, string>()
+    public abstract class CommonAppData
     {
-        { "Libraries.zip",                 @"" },
-        { "shaders.zip",                   @"shaders\" },
-        { "ssl.zip",                       @"ssl\" },
+        // in case a new package is added, you can find the corresponding directory
+        // by opening the stock bootstrapper in a hex editor
+        private IReadOnlyDictionary<string, string> _commonMap { get; } = new Dictionary<string, string>()
+        {
+            { "Libraries.zip",                 @"" },
+            { "redist.zip",                    @"" },
+            { "shaders.zip",                   @"shaders\" },
+            { "ssl.zip",                       @"ssl\" },
 
         // the runtime installer is only extracted if it needs installing
         { "WebView2.zip",                  @"" },

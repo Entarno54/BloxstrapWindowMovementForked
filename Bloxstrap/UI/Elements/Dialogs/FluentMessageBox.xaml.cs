@@ -19,9 +19,12 @@ public partial class FluentMessageBox
 {
     public MessageBoxResult Result = MessageBoxResult.None;
 
-    public FluentMessageBox(string message, MessageBoxImage image, MessageBoxButton buttons)
-    {
-        InitializeComponent();
+        public FluentMessageBox(string message, MessageBoxImage image, MessageBoxButton buttons)
+        {
+            InitializeComponent();
+
+            Title = App.ProjectName;
+            RootTitleBar.Title = Title;
 
         string? iconFilename = null;
         SystemSound? sound = null;

@@ -74,11 +74,15 @@ public static class LaunchHandler
 
             interlock.Dispose();
 
-            ProcessLaunchArgs();
-        }
-        else
-        {
-            new LanguageSelectorDialog().ShowDialog();
+                ProcessLaunchArgs();
+            }
+            else
+            {
+#if QA_BUILD
+                Frontend.ShowMessageBox("You are about to install a QA build of Bloxstrap. The red window border indicates that this is a QA build.\n\nQA builds are handled completely separately of your standard installation, like a virtual environment.", MessageBoxImage.Information);
+#endif
+
+                new LanguageSelectorDialog().ShowDialog();
 
             var installer = new UI.Elements.Installer.MainWindow();
             installer.ShowDialog();
@@ -140,12 +144,14 @@ public static class LaunchHandler
         {
             bool showAlreadyRunningWarning = Process.GetProcessesByName(App.ProjectName).Length > 1;
 
-            var window = new UI.Elements.Settings.MainWindow(showAlreadyRunningWarning);
-            window.Show();
-        }
-        else
-        {
-            App.Logger.WriteLine(LOG_IDENT, $"Found an already existing menu window");
+                var window = new UI.Elements.Settings.MainWindow(showAlreadyRunningWarning);
+
+                // typically we'd use Show(), but we need to block to ensure IPL stays in scope
+                window.ShowDialog();
+            }
+            else
+            {
+                App.Logger.WriteLine(LOG_IDENT, "Found an already existing menu window");
 
             var process = Utilities.GetProcessesSafe().Where(x => x.MainWindowTitle == Strings.Menu_Title).FirstOrDefault();
 
@@ -194,22 +200,22 @@ public static class LaunchHandler
             }
         }
 
-        // start bootstrapper and show the bootstrapper modal if we're not running silently
-        App.Logger.WriteLine(LOG_IDENT, "Initializing bootstrapper");
-        var bootstrapper = new Bootstrapper(launchMode);
-        IBootstrapperDialog? dialog = null;
+            // start bootstrapper and show the bootstrapper modal if we're not running silently
+            App.Logger.WriteLine(LOG_IDENT, "Initializing bootstrapper");
+            App.Bootstrapper = new Bootstrapper(launchMode);
+            IBootstrapperDialog? dialog = null;
 
-        if (!App.LaunchSettings.QuietFlag.Active)
-        {
-            App.Logger.WriteLine(LOG_IDENT, "Initializing bootstrapper dialog");
-            dialog = App.Settings.Prop.BootstrapperStyle.GetNew();
-            bootstrapper.Dialog = dialog;
-            dialog.Bootstrapper = bootstrapper;
-        }
+            if (!App.LaunchSettings.QuietFlag.Active)
+            {
+                App.Logger.WriteLine(LOG_IDENT, "Initializing bootstrapper dialog");
+                dialog = App.Settings.Prop.BootstrapperStyle.GetNew();
+                App.Bootstrapper.Dialog = dialog;
+                dialog.Bootstrapper = App.Bootstrapper;
+            }
 
-        Task.Run(bootstrapper.Run).ContinueWith(t =>
-        {
-            App.Logger.WriteLine(LOG_IDENT, "Bootstrapper task has finished");
+            Task.Run(App.Bootstrapper.Run).ContinueWith(t =>
+            {
+                App.Logger.WriteLine(LOG_IDENT, "Bootstrapper task has finished");
 
             if (t.IsFaulted)
             {

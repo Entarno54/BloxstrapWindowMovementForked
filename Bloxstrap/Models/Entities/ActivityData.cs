@@ -58,11 +58,17 @@ public class ActivityData
 
     public UniverseDetails? UniverseDetails { get; set; }
 
-    public string GameHistoryDescription
-    {
-        get
+        public string GameHistoryDescription
         {
-            string desc = string.Format("{0} • {1} - {2}", UniverseDetails?.Data.Creator.Name, TimeJoined.ToString("h:mm tt"), TimeLeft?.ToString("h:mm tt"));
+            get
+            {
+                string desc = string.Format(
+                    "{0} • {1} {2} {3}", 
+                    UniverseDetails?.Data.Creator.Name,
+                    TimeJoined.ToString("t"), 
+                    Locale.CurrentCulture.Name.StartsWith("ja") ? '~' : '-',
+                    TimeLeft?.ToString("t")
+                );
 
             if (ServerType != ServerType.Public)
                 desc += " • " + ServerType.ToTranslatedString();
