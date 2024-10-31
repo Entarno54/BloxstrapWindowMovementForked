@@ -1,45 +1,68 @@
-﻿namespace Bloxstrap.UI.ViewModels.About;
+﻿using System.Windows;
 
-public class SupportersViewModel : NotifyPropertyChangedViewModel
+namespace Bloxstrap.UI.ViewModels.About
 {
-    public SupporterData? SupporterData { get; private set; }
+    public class SupportersViewModel : NotifyPropertyChangedViewModel
+    {
+        public SupporterData? SupporterData { get; private set; }
         
-    public GenericTriState LoadedState { get; set; } = GenericTriState.Unknown;
+        public GenericTriState LoadedState { get; set; } = GenericTriState.Unknown;
 
-    public string LoadError { get; set; } = "";
+        public string LoadError { get; set; } = "";
 
-    public SupportersViewModel()
-    {
-        // this will cause momentary freezes only when ran under the debugger
-        LoadSupporterData();
-    }
+        public int Columns { get; set; } = 3;
 
-    public async void LoadSupporterData()
-    {
-        const string LOG_IDENT = "AboutViewModel::LoadSupporterData";
+        public SizeChangedEventHandler? WindowResizeEvent;
 
-        try
+        public SupportersViewModel()
         {
-            SupporterData = await Http.GetJson<SupporterData>("https://raw.githubusercontent.com/bloxstraplabs/config/main/supporters.json");
-        }
-        catch (Exception ex)
-        {
-            App.Logger.WriteLine(LOG_IDENT, "Could not load supporter data");
-            App.Logger.WriteException(LOG_IDENT, ex);
+            WindowResizeEvent += OnWindowResize;
 
-            LoadedState = GenericTriState.Failed;
-            LoadError = ex.Message;
-
-            OnPropertyChanged(nameof(LoadError));
+            // this will cause momentary freezes only when ran under the debugger
+            LoadSupporterData();
         }
 
-        if (SupporterData is not null)
+        private void OnWindowResize(object sender, SizeChangedEventArgs e)
         {
-            LoadedState = GenericTriState.Successful;
+            if (!e.WidthChanged)
+                return;
+
+            int newCols = (int)Math.Floor(e.NewSize.Width / 200);
+
+            if (Columns == newCols)
+                return;
+             
+            Columns = newCols;
+            OnPropertyChanged(nameof(Columns));
+        }
+
+        public async void LoadSupporterData()
+        {
+            const string LOG_IDENT = "AboutViewModel::LoadSupporterData";
+
+            try
+            {
+                SupporterData = await Http.GetJson<SupporterData>("https://raw.githubusercontent.com/bloxstraplabs/config/main/supporters.json");
+            }
+            catch (Exception ex)
+            {
+                App.Logger.WriteLine(LOG_IDENT, "Could not load supporter data");
+                App.Logger.WriteException(LOG_IDENT, ex);
+
+                LoadedState = GenericTriState.Failed;
+                LoadError = ex.Message;
+
+                OnPropertyChanged(nameof(LoadError));
+            }
+
+            if (SupporterData is not null)
+            {
+                LoadedState = GenericTriState.Successful;
                 
-            OnPropertyChanged(nameof(SupporterData));
-        }
+                OnPropertyChanged(nameof(SupporterData));
+            }
 
-        OnPropertyChanged(nameof(LoadedState));
+            OnPropertyChanged(nameof(LoadedState));
+        }
     }
 }

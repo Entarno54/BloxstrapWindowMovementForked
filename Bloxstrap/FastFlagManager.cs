@@ -43,66 +43,115 @@ public class FastFlagManager : JsonManager<Dictionary<string, object>>
 
         { "UI.FullscreenTitlebarDelay", "FIntFullscreenTitleBarTriggerDelayMillis" },
             
-        { "UI.Menu.Style.V2Rollout", "FIntNewInGameMenuPercentRollout3" },
-        { "UI.Menu.Style.EnableV4.1", "FFlagEnableInGameMenuControls" },
-        { "UI.Menu.Style.EnableV4.2", "FFlagEnableInGameMenuModernization" },
-        { "UI.Menu.Style.EnableV4Chrome", "FFlagEnableInGameMenuChrome" },
-        { "UI.Menu.Style.ReportButtonCutOff", "FFlagFixReportButtonCutOff" },
+            //{ "UI.Menu.Style.V2Rollout", "FIntNewInGameMenuPercentRollout3" },
+            //{ "UI.Menu.Style.EnableV4.1", "FFlagEnableInGameMenuControls" },
+            //{ "UI.Menu.Style.EnableV4.2", "FFlagEnableInGameMenuModernization" },
+            //{ "UI.Menu.Style.EnableV4Chrome", "FFlagEnableInGameMenuChrome" },
+            //{ "UI.Menu.Style.ReportButtonCutOff", "FFlagFixReportButtonCutOff" },
 
 
-        { "UI.Menu.Style.ABTest.1", "FFlagEnableMenuControlsABTest" },
-        { "UI.Menu.Style.ABTest.2", "FFlagEnableV3MenuABTest3" },
-        { "UI.Menu.Style.ABTest.3", "FFlagEnableInGameMenuChromeABTest3" },
-        { "UI.Menu.Style.ABTest.4", "FFlagEnableInGameMenuChromeABTest4" }
-    };
+            //{ "UI.Menu.Style.ABTest.1", "FFlagEnableMenuControlsABTest" },
+            //{ "UI.Menu.Style.ABTest.2", "FFlagEnableV3MenuABTest3" },
+            //{ "UI.Menu.Style.ABTest.3", "FFlagEnableInGameMenuChromeABTest3" },
+            //{ "UI.Menu.Style.ABTest.4", "FFlagEnableInGameMenuChromeABTest4" }
+        };
 
-    public static IReadOnlyDictionary<RenderingMode, string> RenderingModes => new Dictionary<RenderingMode, string>
-    {
-        { RenderingMode.Default, "None" },
-        { RenderingMode.D3D11, "D3D11" },
-        { RenderingMode.D3D10, "D3D10" },
-    };
-
-    public static IReadOnlyDictionary<LightingMode, string> LightingModes => new Dictionary<LightingMode, string>
-    {
-        { LightingMode.Default, "None" },
-        { LightingMode.Voxel, "Voxel" },
-        { LightingMode.ShadowMap, "ShadowMap" },
-        { LightingMode.Future, "Future" }
-    };
-
-    public static IReadOnlyDictionary<MSAAMode, string?> MSAAModes => new Dictionary<MSAAMode, string?>
-    {
-        { MSAAMode.Default, null },
-        { MSAAMode.x1, "1" },
-        { MSAAMode.x2, "2" },
-        { MSAAMode.x4, "4" }
-    };
-
-    public static IReadOnlyDictionary<TextureQuality, string?> TextureQualityLevels => new Dictionary<TextureQuality, string?>
-    {
-        { TextureQuality.Default, null },
-        { TextureQuality.Level0, "0" },
-        { TextureQuality.Level1, "1" },
-        { TextureQuality.Level2, "2" },
-        { TextureQuality.Level3, "3" },
-    };
-
-    // this is one hell of a dictionary definition lmao
-    // since these all set the same flags, wouldn't making this use bitwise operators be better?
-    public static IReadOnlyDictionary<InGameMenuVersion, Dictionary<string, string?>> IGMenuVersions => new Dictionary<InGameMenuVersion, Dictionary<string, string?>>
-    {
+        public static IReadOnlyDictionary<RenderingMode, string> RenderingModes => new Dictionary<RenderingMode, string>
         {
-            InGameMenuVersion.Default,
-            new Dictionary<string, string?>
-            {
-                { "V2Rollout", null },
-                { "EnableV4", null },
-                { "EnableV4Chrome", null },
-                { "ABTest", null },
-                { "ReportButtonCutOff", null }
-            }
-        },
+            { RenderingMode.Default, "None" },
+            { RenderingMode.D3D11, "D3D11" },
+            { RenderingMode.D3D10, "D3D10" },
+        };
+
+        public static IReadOnlyDictionary<LightingMode, string> LightingModes => new Dictionary<LightingMode, string>
+        {
+            { LightingMode.Default, "None" },
+            { LightingMode.Voxel, "Voxel" },
+            { LightingMode.ShadowMap, "ShadowMap" },
+            { LightingMode.Future, "Future" }
+        };
+
+        public static IReadOnlyDictionary<MSAAMode, string?> MSAAModes => new Dictionary<MSAAMode, string?>
+        {
+            { MSAAMode.Default, null },
+            { MSAAMode.x1, "1" },
+            { MSAAMode.x2, "2" },
+            { MSAAMode.x4, "4" }
+        };
+
+        public static IReadOnlyDictionary<TextureQuality, string?> TextureQualityLevels => new Dictionary<TextureQuality, string?>
+        {
+            { TextureQuality.Default, null },
+            { TextureQuality.Level0, "0" },
+            { TextureQuality.Level1, "1" },
+            { TextureQuality.Level2, "2" },
+            { TextureQuality.Level3, "3" },
+        };
+
+        // this is one hell of a dictionary definition lmao
+        // since these all set the same flags, wouldn't making this use bitwise operators be better?
+        //public static IReadOnlyDictionary<InGameMenuVersion, Dictionary<string, string?>> IGMenuVersions => new Dictionary<InGameMenuVersion, Dictionary<string, string?>>
+        //{
+        //    {
+        //        InGameMenuVersion.Default,
+        //        new Dictionary<string, string?>
+        //        {
+        //            { "V2Rollout", null },
+        //            { "EnableV4", null },
+        //            { "EnableV4Chrome", null },
+        //            { "ABTest", null },
+        //            { "ReportButtonCutOff", null }
+        //        }
+        //    },
+
+        //    {
+        //        InGameMenuVersion.V1,
+        //        new Dictionary<string, string?>
+        //        {
+        //            { "V2Rollout", "0" },
+        //            { "EnableV4", "False" },
+        //            { "EnableV4Chrome", "False" },
+        //            { "ABTest", "False" },
+        //            { "ReportButtonCutOff", "False" }
+        //        }
+        //    },
+
+        //    {
+        //        InGameMenuVersion.V2,
+        //        new Dictionary<string, string?>
+        //        {
+        //            { "V2Rollout", "100" },
+        //            { "EnableV4", "False" },
+        //            { "EnableV4Chrome", "False" },
+        //            { "ABTest", "False" },
+        //            { "ReportButtonCutOff", null }
+        //        }
+        //    },
+
+        //    {
+        //        InGameMenuVersion.V4,
+        //        new Dictionary<string, string?>
+        //        {
+        //            { "V2Rollout", "0" },
+        //            { "EnableV4", "True" },
+        //            { "EnableV4Chrome", "False" },
+        //            { "ABTest", "False" },
+        //            { "ReportButtonCutOff", null }
+        //        }
+        //    },
+
+        //    {
+        //        InGameMenuVersion.V4Chrome,
+        //        new Dictionary<string, string?>
+        //        {
+        //            { "V2Rollout", "0" },
+        //            { "EnableV4", "True" },
+        //            { "EnableV4Chrome", "True" },
+        //            { "ABTest", "False" },
+        //            { "ReportButtonCutOff", null }
+        //        }
+        //    }
+        //};
 
         {
             InGameMenuVersion.V1,
@@ -180,7 +229,42 @@ public class FastFlagManager : JsonManager<Dictionary<string, object>>
                 App.Logger.WriteLine(LOG_IDENT, $"Setting of '{key}' to '{value}' is pending");
             }
 
-            Prop[key] = value.ToString()!;
+            return mapping.First().Key;
+        }
+
+        public override void Save()
+        {
+            // convert all flag values to strings before saving
+
+            foreach (var pair in Prop)
+                Prop[pair.Key] = pair.Value.ToString()!;
+
+            base.Save();
+
+            // clone the dictionary
+            OriginalProp = new(Prop);
+        }
+
+        public override void Load(bool alertFailure = true)
+        {
+            base.Load(alertFailure);
+
+            // clone the dictionary
+            OriginalProp = new(Prop);
+
+            // todo: tracking settings?
+
+            // fflag for detecting if bloxstrap is being used (may remove later)
+            SetPreset("Bloxstrap", allowDetection ? true : null);
+
+            // fflag for detecting if window movement is allowed in order to prevent log bloat when disabled
+            SetPreset("WindowMovement", (App.Settings.Prop.CanGameMoveWindow & allowDetection) ? true : null);
+            
+            if (GetPreset("Network.Log") != "7")
+                SetPreset("Network.Log", "7");
+
+            if (GetPreset("Rendering.ManualFullscreen") != "False")
+                SetPreset("Rendering.ManualFullscreen", "False");
         }
     }
 

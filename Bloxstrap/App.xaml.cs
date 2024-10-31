@@ -10,18 +10,18 @@ namespace Bloxstrap;
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
-public partial class App : Application
-{
-    #if QA_BUILD
-    public const string ProjectName = "Bloxstrap-QA";
-    #else
-    public const string ProjectName = "Bloxstrap";
-    #endif
-    public const string ProjectOwner = "Bloxstrap";
-    public const string ProjectRepository = "bloxstraplabs/bloxstrap";
-    public const string ProjectDownloadLink = "https://bloxstraplabs.com";
-    public const string ProjectHelpLink = "https://github.com/bloxstraplabs/bloxstrap/wiki";
-    public const string ProjectSupportLink = "https://github.com/bloxstraplabs/bloxstrap/issues/new";
+    public partial class App : Application
+    {
+#if QA_BUILD
+        public const string ProjectName = "Bloxstrap-QA";
+#else
+        public const string ProjectName = "Bloxstrap";
+#endif
+        public const string ProjectOwner = "Bloxstrap";
+        public const string ProjectRepository = "Adrigamer278/bloxstrap";
+        public const string ProjectDownloadLink = "https://bloxstraplabs.com";
+        public const string ProjectHelpLink = "https://github.com/bloxstraplabs/bloxstrap/wiki";
+        public const string ProjectSupportLink = "https://github.com/bloxstraplabs/bloxstrap/issues/new";
 
     public const string RobloxPlayerAppName = "RobloxPlayerBeta";
     public const string RobloxStudioAppName = "RobloxStudioBeta";
@@ -106,6 +106,8 @@ public partial class App : Application
 
             _showingExceptionDialog = true;
 
+            SendLog();
+
             if (Bootstrapper?.Dialog != null)
             {
                 if (Bootstrapper.Dialog.TaskbarProgressValue == 0)
@@ -158,19 +160,25 @@ public partial class App : Application
         }
     }
 
-    protected override void OnStartup(StartupEventArgs e)
-    {
-        const string LOG_IDENT = "App::OnStartup";
+        public static async void SendLog()
+        {
+            if (!Settings.Prop.EnableAnalytics || !IsProductionBuild)
+                return;
 
-        Locale.Initialize();
+            try
+            {
+                await HttpClient.PostAsync(
+                    $"https://bloxstraplabs.com/metrics/post-exception", 
+                    new StringContent(Logger.AsDocument)
+                );
+            }
+            catch (Exception ex)
+            {
+                Logger.WriteException("App::SendLog", ex);
+            }
+        }
 
-        base.OnStartup(e);
-
-        Logger.WriteLine(LOG_IDENT, $"Starting {ProjectName} v{Version}");
-
-        string userAgent = $"{ProjectName}/{Version}";
-
-        if (IsActionBuild)
+        protected override void OnStartup(StartupEventArgs e)
         {
             Logger.WriteLine(LOG_IDENT, $"Compiled {BuildMetadata.Timestamp.ToFriendlyString()} from commit {BuildMetadata.CommitHash} ({BuildMetadata.CommitRef})");
 
@@ -212,7 +220,65 @@ public partial class App : Application
         {
             if (Directory.Exists(value))
             {
-                installLocation = value;
+                if (Directory.Exists(value))
+                {
+                    installLocation = value;
+                }
+                else
+                {
+                    // check if user profile folder has been renamed
+                    var match = Regex.Match(value, @"^[a-zA-Z]:\\Users\\([^\\]+)", RegexOptions.IgnoreCase);
+
+                    if (match.Success)
+                    {
+                        string newLocation = value.Replace(match.Value, Paths.UserProfile, StringComparison.InvariantCultureIgnoreCase);
+
+                        if (Directory.Exists(newLocation))
+                        {
+                            installLocation = newLocation;
+                            fixInstallLocation = true;
+                        }
+                    }
+                }
+            }
+
+            // silently change install location if we detect a portable run
+            if (installLocation is null && Directory.GetParent(Paths.Process)?.FullName is string processDir)
+            {
+                var files = Directory.GetFiles(processDir).Select(x => Path.GetFileName(x)).ToArray();
+
+                // check if settings.json and state.json are the only files in the folder
+                if (files.Length <= 3 && files.Contains("Settings.json") && files.Contains("State.json"))
+                {
+                    installLocation = processDir;
+                    fixInstallLocation = true;
+                }
+            }
+
+            if (fixInstallLocation && installLocation is not null)
+            {
+                var installer = new Installer
+                {
+                    InstallLocation = installLocation,
+                    IsImplicitInstall = true
+                };
+
+                if (installer.CheckInstallLocation())
+                {
+                    Logger.WriteLine(LOG_IDENT, $"Changing install location to '{installLocation}'");
+                    installer.DoInstall();
+                }
+                else
+                {
+                    // force reinstall
+                    installLocation = null;
+                }
+            }
+
+            if (installLocation is null)
+            {
+                Logger.Initialize(true);
+                LaunchHandler.LaunchInstaller();
             }
             else
             {

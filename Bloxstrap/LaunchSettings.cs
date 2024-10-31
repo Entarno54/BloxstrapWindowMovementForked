@@ -78,7 +78,22 @@ public class LaunchSettings
                 flag.Data = nextArg;
                 App.Logger.WriteLine(LOG_IDENT, $"Identifier '{identifier}' is active with data");
             }
-            else
+
+            // infer roblox launch uris
+            if (Args.Length >= 1)
+            {
+                string arg = Args[0];
+
+                if (arg.StartsWith("roblox:", StringComparison.OrdinalIgnoreCase) 
+                    || arg.StartsWith("roblox-player:", StringComparison.OrdinalIgnoreCase))
+                {
+                    RobloxLaunchMode = LaunchMode.Player;
+                    RobloxLaunchArgs = arg;
+                }
+            }
+
+            // parse
+            for (int i = 0; i < Args.Length; i++)
             {
                 App.Logger.WriteLine(LOG_IDENT, $"Identifier '{identifier}' is active");
             }

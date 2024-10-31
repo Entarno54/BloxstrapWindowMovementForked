@@ -20,9 +20,9 @@ public class Logger
         string filename = $"{App.ProjectName}_{timestamp}.log";
         string location = Path.Combine(directory, filename);
 
-        WriteLine(LOG_IDENT, $"Initializing at {location}");
+        public string AsDocument => String.Join('\n', History);
 
-        if (Initialized)
+        public void Initialize(bool useTempDir = false)
         {
             WriteLine(LOG_IDENT, "Failed to initialize because logger is already initialized");
             return;
@@ -133,7 +133,31 @@ public class Logger
         }
         finally
         {
-            _semaphore.Release();
+            Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
+
+            string hresult = "0x" + ex.HResult.ToString("X8");
+
+            WriteLine($"[{identifier}] ({hresult}) {ex}");
+
+            Thread.CurrentThread.CurrentUICulture = Locale.CurrentCulture;
+        }
+
+        private async void WriteToLog(string message)
+        {
+            if (!Initialized)
+                return;
+
+            try
+            {
+                await _semaphore.WaitAsync();
+                await _filestream!.WriteAsync(Encoding.UTF8.GetBytes($"{message}\r\n"));
+
+                _ = _filestream.FlushAsync();
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
     }
 }

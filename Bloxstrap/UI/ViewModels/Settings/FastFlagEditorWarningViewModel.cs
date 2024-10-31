@@ -1,4 +1,4 @@
-﻿using System.Windows;
+﻿﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
@@ -7,58 +7,84 @@ using Wpf.Ui.Mvvm.Contracts;
 
 using Bloxstrap.UI.Elements.Settings.Pages;
 
-namespace Bloxstrap.UI.ViewModels.Settings;
-
-internal class FastFlagEditorWarningViewModel : NotifyPropertyChangedViewModel
+namespace Bloxstrap.UI.ViewModels.Settings
 {
-    private Page _page;
-
-    public string ContinueButtonText { get; set; } = "";
-
-    public bool CanContinue { get; set; } = false;
-
-    public ICommand GoBackCommand => new RelayCommand(GoBack);
-
-    public ICommand ContinueCommand => new RelayCommand(Continue);
-
-    public FastFlagEditorWarningViewModel(Page page)
+    internal class FastFlagEditorWarningViewModel : NotifyPropertyChangedViewModel
     {
-        _page = page;
-        DoCountdown();
-    }
+        private Page _page;
 
-    private async void DoCountdown()
-    {
-        for (int i = 10; i > 0; i--)
+        private CancellationTokenSource? _cancellationTokenSource;
+
+        public string ContinueButtonText { get; set; } = "";
+
+        public bool CanContinue { get; set; } = false;
+
+        public ICommand GoBackCommand => new RelayCommand(GoBack);
+
+        public ICommand ContinueCommand => new RelayCommand(Continue);
+
+        public FastFlagEditorWarningViewModel(Page page)
         {
-            ContinueButtonText = $"({i}) {Strings.Menu_FastFlagEditor_Warning_Continue}";
-            OnPropertyChanged(nameof(ContinueButtonText));
-
-            await Task.Delay(1000);
+            _page = page;
         }
 
-        ContinueButtonText = Strings.Menu_FastFlagEditor_Warning_Continue;
-        OnPropertyChanged(nameof(ContinueButtonText));
+        public void StopCountdown()
+        {
+            _cancellationTokenSource?.Cancel();
+            _cancellationTokenSource = null;
+        }
 
-        CanContinue = true;
-        OnPropertyChanged(nameof(CanContinue));
+        public void StartCountdown()
+        {
+            StopCountdown();
 
-        App.State.Prop.ShowFFlagEditorWarning = false;
-        App.State.Save();
-    }
+            _cancellationTokenSource = new CancellationTokenSource();
+            DoCountdown(_cancellationTokenSource.Token);
+        }
 
-    private void Continue()
-    {
-        if (!CanContinue)
-            return;
+        private async void DoCountdown(CancellationToken token)
+        {
+            CanContinue = false;
+            OnPropertyChanged(nameof(CanContinue));
 
-        if (Window.GetWindow(_page) is INavigationWindow window)
-            window.Navigate(typeof(FastFlagEditorPage));
-    }
+            for (int i = 10; i > 0; i--)
+            {
+                ContinueButtonText = $"({i}) {Strings.Menu_FastFlagEditor_Warning_Continue}";
+                OnPropertyChanged(nameof(ContinueButtonText));
 
-    private void GoBack()
-    {
-        if (Window.GetWindow(_page) is INavigationWindow window)
-            window.Navigate(typeof(FastFlagsPage));
+                try
+                {
+                    await Task.Delay(1000, token);
+                }
+                catch (TaskCanceledException)
+                {
+                    return;
+                }
+            }
+
+            ContinueButtonText = Strings.Menu_FastFlagEditor_Warning_Continue;
+            OnPropertyChanged(nameof(ContinueButtonText));
+
+            CanContinue = true;
+            OnPropertyChanged(nameof(CanContinue));
+        }
+
+        private void Continue()
+        {
+            if (!CanContinue)
+                return;
+
+            App.State.Prop.ShowFFlagEditorWarning = false;
+            App.State.Save(); // should we be force saving here?
+
+            if (Window.GetWindow(_page) is INavigationWindow window)
+                window.Navigate(typeof(FastFlagEditorPage));
+        }
+
+        private void GoBack()
+        {
+            if (Window.GetWindow(_page) is INavigationWindow window)
+                window.Navigate(typeof(FastFlagsPage));
+        }
     }
 }

@@ -41,8 +41,27 @@ public class EmojiModPresetTask : EnumBaseTask<EmojiType>
 
                 Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
 
-                await using var fileStream = new FileStream(_filePath, FileMode.CreateNew);
-                await response.Content.CopyToAsync(fileStream);
+                    await using var fileStream = new FileStream(_filePath, FileMode.Create);
+                    await response.Content.CopyToAsync(fileStream);
+
+                    OriginalState = NewState;
+                }
+                catch (Exception ex)
+                {
+                    App.Logger.WriteException(LOG_IDENT, ex);
+
+                    Frontend.ShowConnectivityDialog(
+                        String.Format(Strings.Dialog_Connectivity_UnableToConnect, "GitHub"),
+                        $"{Strings.Menu_Mods_Presets_EmojiType_Error}\n\n{Strings.Dialog_Connectivity_TryAgainLater}",
+                        MessageBoxImage.Warning,
+                        ex
+                    );
+                }
+            }
+            else if (query is not null && query.Any())
+            {
+                Filesystem.AssertReadOnly(_filePath);
+                File.Delete(_filePath);
 
                 OriginalState = NewState;
             }

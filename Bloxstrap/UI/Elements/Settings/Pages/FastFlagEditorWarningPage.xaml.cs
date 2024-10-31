@@ -1,31 +1,31 @@
-﻿using Bloxstrap.UI.ViewModels.Settings;
+﻿﻿using Bloxstrap.UI.ViewModels.Settings;
 using System.Windows;
 
-namespace Bloxstrap.UI.Elements.Settings.Pages;
-
-/// <summary>
-/// Interaction logic for FastFlagEditorWarningPage.xaml
-/// </summary>
-public partial class FastFlagEditorWarningPage
+namespace Bloxstrap.UI.Elements.Settings.Pages
 {
-    private bool _initialLoad = false;
-
-    public FastFlagEditorWarningPage()
+    /// <summary>
+    /// Interaction logic for FastFlagEditorWarningPage.xaml
+    /// </summary>
+    public partial class FastFlagEditorWarningPage
     {
-        DataContext = new FastFlagEditorWarningViewModel(this);
-        InitializeComponent();
-    }
+        private FastFlagEditorWarningViewModel _viewModel;
 
-    private void Page_Loaded(object sender, RoutedEventArgs e)
-    {
-        // refresh datacontext on page load to reset timer
-
-        if (!_initialLoad)
+        public FastFlagEditorWarningPage()
         {
-            _initialLoad = true;
-            return;
+            _viewModel = new FastFlagEditorWarningViewModel(this);
+            DataContext = _viewModel;
+
+            InitializeComponent();
         }
 
-        DataContext = new FastFlagEditorWarningViewModel(this);
+        private void Page_Loaded(object sender, RoutedEventArgs e)
+        {
+            _viewModel.StartCountdown();
+        }
+
+        private void Page_Unloaded(object sender, RoutedEventArgs e)
+        {
+            _viewModel.StopCountdown();
+        }
     }
 }

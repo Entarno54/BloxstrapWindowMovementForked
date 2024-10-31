@@ -10,9 +10,9 @@ internal interface IAppData
 
     string ExecutableName { get; }
 
-    string StartEvent { get; }
-
     string Directory { get; }
+
+    string OldDirectory { get; }
 
     string LockFilePath { get; }
 

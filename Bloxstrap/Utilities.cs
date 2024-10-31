@@ -16,10 +16,25 @@ static class Utilities
         }
         catch (Win32Exception ex)
         {
-            // lmfao
+            try
+            {
+                var version1 = new Version(versionStr1.Replace("v", ""));
+                var version2 = new Version(versionStr2.Replace("v", ""));
 
-            if (ex.NativeErrorCode != (int)ErrorCode.CO_E_APPNOTFOUND)
+                return (VersionComparison)version1.CompareTo(version2);
+            }
+            catch (Exception)
+            {
+                // temporary diagnostic log for the issue described here:
+                // https://github.com/bloxstraplabs/bloxstrap/issues/3193
+                // the problem is that this happens only on upgrade, so my only hope of catching this is bug reports following the next release
+
+                App.Logger.WriteLine("Utilities::CompareVersions", "An exception occurred when comparing versions");
+                App.Logger.WriteLine("Utilities::CompareVersions", $"versionStr1={versionStr1} versionStr2={versionStr2}");
+
                 throw;
+            }
+        }
 
             Process.Start(new ProcessStartInfo
             {

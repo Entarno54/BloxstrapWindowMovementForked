@@ -358,8 +358,6 @@ internal class Installer
                 || Paths.Process.StartsWith(Path.Combine(Paths.LocalAppData, "Temp"))
                 || Paths.Process.StartsWith(Paths.TempUpdates);
 
-            isAutoUpgrade = true;
-
         var existingVer = FileVersionInfo.GetVersionInfo(Paths.Application).ProductVersion;
         var currentVer = FileVersionInfo.GetVersionInfo(Paths.Process).ProductVersion;
 
@@ -591,9 +589,24 @@ internal class Installer
                     }
                 }
 
-            App.Settings.Save();
-            App.FastFlags.Save();
-        }
+                if (Utilities.CompareVersions(existingVer, "2.8.1") == VersionComparison.LessThan)
+                {
+                    // wipe all escape menu flag presets
+                    App.FastFlags.SetValue("FIntNewInGameMenuPercentRollout3", null);
+                    App.FastFlags.SetValue("FFlagEnableInGameMenuControls", null);
+                    App.FastFlags.SetValue("FFlagEnableInGameMenuModernization", null);
+                    App.FastFlags.SetValue("FFlagEnableInGameMenuChrome", null);
+                    App.FastFlags.SetValue("FFlagFixReportButtonCutOff", null);
+                    App.FastFlags.SetValue("FFlagEnableMenuControlsABTest", null);
+                    App.FastFlags.SetValue("FFlagEnableV3MenuABTest3", null);
+                    App.FastFlags.SetValue("FFlagEnableInGameMenuChromeABTest3", null);
+                    App.FastFlags.SetValue("FFlagEnableInGameMenuChromeABTest4", null);
+                }
+
+
+                App.Settings.Save();
+                App.FastFlags.Save();
+            }
 
         if (currentVer is null)
             return;

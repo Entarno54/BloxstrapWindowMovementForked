@@ -155,34 +155,11 @@ public static class LaunchHandler
 
             var process = Utilities.GetProcessesSafe().Where(x => x.MainWindowTitle == Strings.Menu_Title).FirstOrDefault();
 
-            if (process is not null)
-                PInvoke.SetForegroundWindow((HWND)process.MainWindowHandle);
-        }
-    }
+                if (process is not null)
+                    PInvoke.SetForegroundWindow((HWND)process.MainWindowHandle);
 
-    public static void LaunchMenu()
-    {
-        var dialog = new LaunchMenuDialog();
-        dialog.ShowDialog();
-
-        ProcessNextAction(dialog.CloseAction);
-    }
-
-    public static void LaunchRoblox(LaunchMode launchMode)
-    {
-        const string LOG_IDENT = "LaunchHandler::LaunchRoblox";
-
-        if (launchMode == LaunchMode.None)
-            throw new InvalidOperationException("No Roblox launch mode set");
-
-        if (!File.Exists(Path.Combine(Paths.System, "mfplat.dll")))
-        {
-            Frontend.ShowMessageBox(Strings.Bootstrapper_WMFNotFound, MessageBoxImage.Error);
-
-            if (!App.LaunchSettings.QuietFlag.Active)
-                Utilities.ShellExecute("https://support.microsoft.com/en-us/topic/media-feature-pack-list-for-windows-n-editions-c1c6fffa-d052-8338-7a79-a4bb980a700a");
-
-            App.Terminate(ErrorCode.ERROR_FILE_NOT_FOUND);
+                App.Terminate();
+            }
         }
 
         if (App.Settings.Prop.ConfirmLaunches && Mutex.TryOpenExisting("ROBLOX_singletonMutex", out var _))

@@ -8,7 +8,9 @@ static class WindowsRegistry
 
     public static void RegisterProtocol(string key, string name, string handler, string handlerParam = "%1")
     {
-        string handlerArgs = $"\"{handler}\" {handlerParam}";
+        private const string RobloxPlaceKey = "Roblox.Place";
+        
+        public static readonly List<RegistryKey> Roots = new() { Registry.CurrentUser, Registry.LocalMachine };
 
         using var uriKey = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{key}");
         using var uriIconKey = uriKey.CreateSubKey("DefaultIcon");

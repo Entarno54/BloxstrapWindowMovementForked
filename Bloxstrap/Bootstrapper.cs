@@ -11,6 +11,8 @@
 #warning "Automatic updater debugging is enabled"
 #endif
 
+using System.ComponentModel;
+using System.Data;
 using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Shell;
@@ -114,24 +116,23 @@ public class Bootstrapper
         Dialog.TaskbarProgressValue = taskbarProgressValue;
     }
 
-        private void HandleConnectionError(Exception exception)
-        {
-            const string LOG_IDENT = "Bootstrapper::HandleConnectionError";
+    private void HandleConnectionError(Exception exception)
+    {
+        const string LOG_IDENT = "Bootstrapper::HandleConnectionError";
 
-            _noConnection = true;
+        _noConnection = true;
 
-            App.Logger.WriteLine(LOG_IDENT, "Connectivity check failed");
-            App.Logger.WriteException(LOG_IDENT, exception);
+        App.Logger.WriteLine(LOG_IDENT, "Connectivity check failed");
+        App.Logger.WriteException(LOG_IDENT, exception);
 
-        string message = Strings.Dialog_Connectivity_Preventing;
+        string message = Strings.Dialog_Connectivity_BadConnection;
 
-        if (exception.GetType() == typeof(AggregateException))
+        if (exception is AggregateException)
             exception = exception.InnerException!;
 
-        if (exception.GetType() == typeof(HttpRequestException))
+        // https://gist.github.com/pizzaboxer/4b58303589ee5b14cc64397460a8f386
+        if (exception is HttpRequestException && exception.InnerException is null)
             message = String.Format(Strings.Dialog_Connectivity_RobloxDown, "[status.roblox.com](https://status.roblox.com)");
-        else if (exception.GetType() == typeof(TaskCanceledException))
-            message = Strings.Dialog_Connectivity_TimedOut;
 
         if (_mustUpgrade)
             message += $"\n\n{Strings.Dialog_Connectivity_RobloxUpgradeNeeded}\n\n{Strings.Dialog_Connectivity_TryAgainLater}";
@@ -250,17 +251,25 @@ public class Bootstrapper
             Dialog?.CloseBootstrapper();
         }
 
-    private async Task GetLatestVersionInfo()
-    {
-        const string LOG_IDENT = "Bootstrapper::GetLatestVersionInfo";
+        /// <summary>
+        /// Will throw whatever HttpClient can throw
+        /// </summary>
+        /// <returns></returns>
+        private async Task GetLatestVersionInfo()
+        {
+            const string LOG_IDENT = "Bootstrapper::GetLatestVersionInfo";
 
             // before we do anything, we need to query our channel
             // if it's set in the launch uri, we need to use it and set the registry key for it
             // else, check if the registry key for it exists, and use it
 
-        using var key = Registry.CurrentUser.CreateSubKey($"SOFTWARE\\ROBLOX Corporation\\Environments\\{AppData.RegistryName}\\Channel");
+            using var key = Registry.CurrentUser.CreateSubKey($"SOFTWARE\\ROBLOX Corporation\\Environments\\{AppData.RegistryName}\\Channel");
 
-        var match = Regex.Match(App.LaunchSettings.RobloxLaunchArgs, "channel:([a-zA-Z0-9-_]+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            var match = Regex.Match(
+                App.LaunchSettings.RobloxLaunchArgs, 
+                "channel:([a-zA-Z0-9-_]+)", 
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant
+            );
 
             if (match.Groups.Count == 2)
             {
@@ -271,9 +280,12 @@ public class Bootstrapper
                 Deployment.Channel = value.ToLowerInvariant();
             }
 
-            App.Logger.WriteLine(LOG_IDENT, "Got channel as " + (String.IsNullOrEmpty(Deployment.Channel) ? Deployment.DefaultChannel : Deployment.Channel));
+            if (String.IsNullOrEmpty(Deployment.Channel))
+                Deployment.Channel = Deployment.DefaultChannel;
 
-            if (Deployment.Channel != "production")
+            App.Logger.WriteLine(LOG_IDENT, $"Got channel as {Deployment.DefaultChannel}");
+
+            if (!Deployment.IsDefaultChannel)
                 App.SendStat("robloxChannel", Deployment.Channel);
 
         ClientVersion clientVersion;
@@ -282,14 +294,9 @@ public class Bootstrapper
             {
                 clientVersion = await Deployment.GetInfo();
             }
-            catch (HttpRequestException ex)
+            catch (InvalidChannelException ex)
             {
-                if (ex.StatusCode is not HttpStatusCode.Unauthorized 
-                    and not HttpStatusCode.Forbidden 
-                    and not HttpStatusCode.NotFound)
-                    throw;
-
-                App.Logger.WriteLine(LOG_IDENT, $"Changing channel from {Deployment.Channel} to {Deployment.DefaultChannel} because HTTP {(int)ex.StatusCode}");
+                App.Logger.WriteLine(LOG_IDENT, $"Resetting channel from {Deployment.Channel} because {ex.StatusCode}");
 
                 Deployment.Channel = Deployment.DefaultChannel;
                 clientVersion = await Deployment.GetInfo();
@@ -297,7 +304,7 @@ public class Bootstrapper
 
             if (clientVersion.IsBehindDefaultChannel)
             {
-                App.Logger.WriteLine(LOG_IDENT, $"Changing channel from {Deployment.Channel} to {Deployment.DefaultChannel} because channel is behind production");
+                App.Logger.WriteLine(LOG_IDENT, $"Resetting channel from {Deployment.Channel} because it's behind production");
 
                 Deployment.Channel = Deployment.DefaultChannel;
                 clientVersion = await Deployment.GetInfo();
@@ -342,74 +349,94 @@ public class Bootstrapper
             WorkingDirectory = AppData.Directory
         };
 
-        if (_launchMode == LaunchMode.StudioAuth)
+        SetStatus(Strings.Bootstrapper_Status_Starting);
+
+        if (_launchMode == LaunchMode.Player && App.Settings.Prop.ForceRobloxLanguage)
+        {
+            var match = Regex.Match(_launchCommandLine, "gameLocale:([a-z_]+)", RegexOptions.CultureInvariant);
+
+            if (match.Groups.Count == 2)
+                _launchCommandLine = _launchCommandLine.Replace(
+                    "robloxLocale:en_us", 
+                    $"robloxLocale:{match.Groups[1].Value}", 
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
+        var startInfo = new ProcessStartInfo()
+        {
+            FileName = AppData.ExecutablePath,
+            Arguments = _launchCommandLine,
+            WorkingDirectory = AppData.Directory
+        };
+
+        if (_launchMode == LaunchMode.Player && ShouldRunAsAdmin())
+        {
+            startInfo.Verb = "runas";
+            startInfo.UseShellExecute = true;
+        }
+        else if (_launchMode == LaunchMode.StudioAuth)
         {
             Process.Start(startInfo);
             return;
         }
 
-            string? logFileName = null;
+        string? logFileName = null;
 
-            using (var startEvent = new EventWaitHandle(false, EventResetMode.ManualReset, AppData.StartEvent))
-            {
-                startEvent.Reset();
+        string rbxLogDir = Path.Combine(Paths.LocalAppData, "Roblox\\logs");
 
-                string rbxLogDir = Path.Combine(Paths.LocalAppData, "Roblox\\logs");
+        if (!Directory.Exists(rbxLogDir))
+            Directory.CreateDirectory(rbxLogDir);
 
-                if (!Directory.Exists(rbxLogDir))
-                    Directory.CreateDirectory(rbxLogDir);
+        var logWatcher = new FileSystemWatcher()
+        {
+            Path = rbxLogDir,
+            Filter = "*.log",
+            EnableRaisingEvents = true
+        };
 
-                var logWatcher = new FileSystemWatcher()
-                {
-                    Path = rbxLogDir,
-                    Filter = "*.log",
-                    EnableRaisingEvents = true
-                };
+        var logCreatedEvent = new AutoResetEvent(false);
 
-                var logCreatedEvent = new AutoResetEvent(false);
+        logWatcher.Created += (_, e) =>
+        {
+            logWatcher.EnableRaisingEvents = false;
+            logFileName = e.FullPath;
+            logCreatedEvent.Set();
+        };
 
-                logWatcher.Created += (_, e) =>
-                {
-                    logWatcher.EnableRaisingEvents = false;
-                    logFileName = e.FullPath;
-                    logCreatedEvent.Set();
-                };
+        // v2.2.0 - byfron will trip if we keep a process handle open for over a minute, so we're doing this now
+        try
+        {
+            using var process = Process.Start(startInfo)!;
+            _appPid = process.Id;
+        }
+        catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
+        {
+            // 1223 = ERROR_CANCELLED, gets thrown if a UAC prompt is cancelled
+            return;
+        }
+        catch (Exception)
+        {
+            // attempt a reinstall on next launch
+            File.Delete(AppData.ExecutablePath);
+            throw;
+        }
 
-            // v2.2.0 - byfron will trip if we keep a process handle open for over a minute, so we're doing this now
-            try
-            {
-                using var process = Process.Start(startInfo)!;
-                _appPid = process.Id;
-            }
-            catch (Exception)
-            {
-                // attempt a reinstall on next launch
-                File.Delete(AppData.ExecutablePath);
-                throw;
-            }
+        App.Logger.WriteLine(LOG_IDENT, $"Started Roblox (PID {_appPid}), waiting for log file");
 
-            App.Logger.WriteLine(LOG_IDENT, $"Started Roblox (PID {_appPid}), waiting for start event");
+        logCreatedEvent.WaitOne(TimeSpan.FromSeconds(15));
 
-                if (startEvent.WaitOne(TimeSpan.FromSeconds(5)))
-                    App.Logger.WriteLine(LOG_IDENT, "Start event signalled");
-                else
-                   App.Logger.WriteLine(LOG_IDENT, "Start event not signalled, implying successful launch");
+        if (String.IsNullOrEmpty(logFileName))
+        {
+            App.Logger.WriteLine(LOG_IDENT, "Unable to identify log file");
+            Frontend.ShowPlayerErrorDialog();
+            return;
+        }
+        else
+        {
+            App.Logger.WriteLine(LOG_IDENT, $"Got log file as {logFileName}");
+        }
 
-                logCreatedEvent.WaitOne(TimeSpan.FromSeconds(5));
-
-                if (String.IsNullOrEmpty(logFileName))
-                {
-                    App.Logger.WriteLine(LOG_IDENT, "Unable to identify log file");
-                    Frontend.ShowPlayerErrorDialog();
-                    return;
-                }
-                else
-                {
-                    App.Logger.WriteLine(LOG_IDENT, $"Got log file as {logFileName}");
-                }
-
-                _mutex?.ReleaseAsync();
-            }
+        _mutex?.ReleaseAsync();
 
         if (IsStudioLaunch)
             return;
@@ -500,6 +527,27 @@ public class Bootstrapper
                 var lockFile = new FileInfo(AppData.LockFilePath);
                 lockFile.Create().Dispose();
             }
+
+            // allow for window to show, since the log is created pretty far beforehand
+            Thread.Sleep(1000);
+        }
+
+        private bool ShouldRunAsAdmin()
+        {
+            foreach (var root in WindowsRegistry.Roots)
+            {
+                using var key = root.OpenSubKey("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers");
+
+                if (key is null)
+                    continue;
+
+                string? flags = (string?)key.GetValue(AppData.ExecutablePath);
+
+                if (flags is not null && flags.Contains("RUNASADMIN", StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
         }
         else if (_appPid != 0)
         {
@@ -641,21 +689,227 @@ public class Bootstrapper
 
             if (Directory.Exists(AppData.Directory))
             {
+                if (Directory.Exists(AppData.OldDirectory))
+                    Directory.Delete(AppData.OldDirectory, true);
+
                 try
                 {
-                    // gross hack to see if roblox is still running
-                    // i don't want to rely on mutexes because they can change, and will false flag for
-                    // running installations that are not by bloxstrap
-                    File.Delete(AppData.ExecutablePath);
+                    // test to see if any files are in use
+                    // if you have a better way to check for this, please let me know!
+                    Directory.Move(AppData.Directory, AppData.OldDirectory);
                 }
                 catch (Exception ex)
                 {
-                    App.Logger.WriteLine(LOG_IDENT, "Could not delete executable/folder, Roblox may still be running. Aborting update.");
+                    App.Logger.WriteLine(LOG_IDENT, "Could not clear old files, aborting update.");
                     App.Logger.WriteException(LOG_IDENT, ex);
+
+                    // 0x80070020 is the HRESULT that indicates that a process is still running
+                    // (either RobloxPlayerBeta or RobloxCrashHandler), so we'll silently ignore it
+                    if ((uint)ex.HResult != 0x80070020)
+                    {
+                        // ensure no files are marked as read-only for good measure
+                        foreach (var file in Directory.GetFiles(AppData.Directory, "*", SearchOption.AllDirectories))
+                            Filesystem.AssertReadOnly(file);
+
+                        Frontend.ShowMessageBox(
+                            Strings.Bootstrapper_FilesInUse, 
+                            _mustUpgrade ? MessageBoxImage.Error : MessageBoxImage.Warning
+                        );
+
+                        if (_mustUpgrade)
+                            App.Terminate(ErrorCode.ERROR_CANCELLED);
+                    }
+
                     return;
                 }
 
-            Directory.Delete(AppData.Directory, true);
+                Directory.Delete(AppData.OldDirectory, true);
+            }
+
+            _isInstalling = true;
+
+            Directory.CreateDirectory(AppData.Directory);
+
+            // installer lock, it should only be present while roblox is in the process of upgrading
+            // if it's present while we're launching, then it's an unfinished install and must be reinstalled
+            var lockFile = new FileInfo(AppData.LockFilePath);
+            lockFile.Create().Dispose();
+
+            var cachedPackageHashes = Directory.GetFiles(Paths.Downloads).Select(x => Path.GetFileName(x));
+
+            // package manifest states packed size and uncompressed size in exact bytes
+            int totalSizeRequired = 0;
+
+            // packed size only matters if we don't already have the package cached on disk
+            totalSizeRequired += _versionPackageManifest.Where(x => !cachedPackageHashes.Contains(x.Signature)).Sum(x => x.PackedSize);
+            totalSizeRequired += _versionPackageManifest.Sum(x => x.Size);
+            
+            if (Filesystem.GetFreeDiskSpace(Paths.Base) < totalSizeRequired)
+            {
+                Frontend.ShowMessageBox(Strings.Bootstrapper_NotEnoughSpace, MessageBoxImage.Error);
+                App.Terminate(ErrorCode.ERROR_INSTALL_FAILURE);
+                return;
+            }
+
+            if (Dialog is not null)
+            {
+                Dialog.ProgressStyle = ProgressBarStyle.Continuous;
+                Dialog.TaskbarProgressState = TaskbarItemProgressState.Normal;
+
+                Dialog.ProgressMaximum = ProgressBarMaximum;
+
+                // compute total bytes to download
+                int totalPackedSize = _versionPackageManifest.Sum(package => package.PackedSize);
+                _progressIncrement = (double)ProgressBarMaximum / totalPackedSize;
+
+                if (Dialog is WinFormsDialogBase)
+                    _taskbarProgressMaximum = (double)TaskbarProgressMaximumWinForms;
+                else
+                    _taskbarProgressMaximum = (double)TaskbarProgressMaximumWpf;
+
+                _taskbarProgressIncrement = _taskbarProgressMaximum / (double)totalPackedSize;
+            }
+
+            var extractionTasks = new List<Task>();
+
+            foreach (var package in _versionPackageManifest)
+            {
+                if (_cancelTokenSource.IsCancellationRequested)
+                    return;
+
+                // download all the packages synchronously
+                await DownloadPackage(package);
+
+                // we'll extract the runtime installer later if we need to
+                if (package.Name == "WebView2RuntimeInstaller.zip")
+                    continue;
+
+                // extract the package async immediately after download
+                extractionTasks.Add(Task.Run(() => ExtractPackage(package), _cancelTokenSource.Token));
+            }
+
+            if (_cancelTokenSource.IsCancellationRequested)
+                return;
+
+            if (Dialog is not null)
+            {
+                Dialog.ProgressStyle = ProgressBarStyle.Marquee;
+                Dialog.TaskbarProgressState = TaskbarItemProgressState.Indeterminate;
+                SetStatus(Strings.Bootstrapper_Status_Configuring);
+            }
+
+            await Task.WhenAll(extractionTasks);
+            
+            App.Logger.WriteLine(LOG_IDENT, "Writing AppSettings.xml...");
+            await File.WriteAllTextAsync(Path.Combine(AppData.Directory, "AppSettings.xml"), AppSettings);
+
+            if (_cancelTokenSource.IsCancellationRequested)
+                return;
+
+            if (App.State.Prop.PromptWebView2Install)
+            {
+                using var hklmKey = Registry.LocalMachine.OpenSubKey("SOFTWARE\\WOW6432Node\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}");
+                using var hkcuKey = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}");
+
+                if (hklmKey is not null || hkcuKey is not null)
+                {
+                    // reset prompt state if the user has it installed
+                    App.State.Prop.PromptWebView2Install = true;
+                }   
+                else
+                {
+                    var result = Frontend.ShowMessageBox(Strings.Bootstrapper_WebView2NotFound, MessageBoxImage.Warning, MessageBoxButton.YesNo, MessageBoxResult.Yes);
+
+                    if (result != MessageBoxResult.Yes)
+                    {
+                        App.State.Prop.PromptWebView2Install = false;
+                    }
+                    else
+                    {
+                        App.Logger.WriteLine(LOG_IDENT, "Installing WebView2 runtime...");
+
+                        var package = _versionPackageManifest.Find(x => x.Name == "WebView2RuntimeInstaller.zip");
+
+                        if (package is null)
+                        {
+                            App.Logger.WriteLine(LOG_IDENT, "Aborted runtime install because package does not exist, has WebView2 been added in this Roblox version yet?");
+                            return;
+                        }
+
+                        string baseDirectory = Path.Combine(AppData.Directory, AppData.PackageDirectoryMap[package.Name]);
+
+                        ExtractPackage(package);
+
+                        SetStatus(Strings.Bootstrapper_Status_InstallingWebView2);
+
+                        var startInfo = new ProcessStartInfo()
+                        {
+                            WorkingDirectory = baseDirectory,
+                            FileName = Path.Combine(baseDirectory, "MicrosoftEdgeWebview2Setup.exe"),
+                            Arguments = "/silent /install"
+                        };
+
+                        await Process.Start(startInfo)!.WaitForExitAsync();
+
+                        App.Logger.WriteLine(LOG_IDENT, "Finished installing runtime");
+
+                        Directory.Delete(baseDirectory, true);
+                    }
+                }
+            }
+
+            // finishing and cleanup
+
+            AppData.State.VersionGuid = _latestVersionGuid;
+
+            AppData.State.PackageHashes.Clear();
+
+            foreach (var package in _versionPackageManifest)
+                AppData.State.PackageHashes.Add(package.Name, package.Signature);
+
+            var allPackageHashes = new List<string>();
+
+            allPackageHashes.AddRange(App.State.Prop.Player.PackageHashes.Values);
+            allPackageHashes.AddRange(App.State.Prop.Studio.PackageHashes.Values);
+
+            foreach (string hash in cachedPackageHashes)
+            {
+                if (!allPackageHashes.Contains(hash))
+                {
+                    App.Logger.WriteLine(LOG_IDENT, $"Deleting unused package {hash}");
+                        
+                    try
+                    {
+                        File.Delete(Path.Combine(Paths.Downloads, hash));
+                    }
+                    catch (Exception ex)
+                    {
+                        App.Logger.WriteLine(LOG_IDENT, $"Failed to delete {hash}!");
+                        App.Logger.WriteException(LOG_IDENT, ex);
+                    }
+                }
+            }
+
+            App.Logger.WriteLine(LOG_IDENT, "Registering approximate program size...");
+
+            int distributionSize = _versionPackageManifest.Sum(x => x.Size + x.PackedSize) / 1024;
+
+            AppData.State.Size = distributionSize;
+
+            int totalSize = App.State.Prop.Player.Size + App.State.Prop.Studio.Size;
+
+            using (var uninstallKey = Registry.CurrentUser.CreateSubKey(App.UninstallKey))
+            {
+                uninstallKey.SetValueSafe("EstimatedSize", totalSize);
+            }
+
+            App.Logger.WriteLine(LOG_IDENT, $"Registered as {totalSize} KB");
+
+            App.State.Save();
+
+            lockFile.Delete();
+
+            _isInstalling = false;
         }
 
         _isInstalling = true;
@@ -915,105 +1169,7 @@ public class Bootstrapper
             if (_cancelTokenSource.IsCancellationRequested)
                 return;
 
-            // get relative directory path
-            string relativeFile = file.Substring(Paths.Modifications.Length + 1);
-
-            // v1.7.0 - README has been moved to the preferences menu now
-            if (relativeFile == "README.txt")
-            {
-                File.Delete(file);
-                continue;
-            }
-
-            if (!App.Settings.Prop.UseFastFlagManager && String.Equals(relativeFile, "ClientSettings\\ClientAppSettings.json", StringComparison.OrdinalIgnoreCase))
-                continue;
-
-            if (relativeFile.EndsWith(".lock"))
-                continue;
-
-            modFolderFiles.Add(relativeFile);
-
-            string fileModFolder = Path.Combine(Paths.Modifications, relativeFile);
-            string fileVersionFolder = Path.Combine(AppData.Directory, relativeFile);
-
-            if (File.Exists(fileVersionFolder) && MD5Hash.FromFile(fileModFolder) == MD5Hash.FromFile(fileVersionFolder))
-            {
-                App.Logger.WriteLine(LOG_IDENT, $"{relativeFile} already exists in the version folder, and is a match");
-                continue;
-            }
-
-            Directory.CreateDirectory(Path.GetDirectoryName(fileVersionFolder)!);
-
-            Filesystem.AssertReadOnly(fileVersionFolder);
-            File.Copy(fileModFolder, fileVersionFolder, true);
-            Filesystem.AssertReadOnly(fileVersionFolder);
-
-            App.Logger.WriteLine(LOG_IDENT, $"{relativeFile} has been copied to the version folder");
-        }
-
-        // the manifest is primarily here to keep track of what files have been
-        // deleted from the modifications folder, so that we know when to restore the original files from the downloaded packages
-        // now check for files that have been deleted from the mod folder according to the manifest
-
-        var fileRestoreMap = new Dictionary<string, List<string>>();
-
-        foreach (string fileLocation in App.State.Prop.ModManifest)
-        {
-            if (modFolderFiles.Contains(fileLocation))
-                continue;
-
-            var packageMapEntry = AppData.PackageDirectoryMap.SingleOrDefault(x => !String.IsNullOrEmpty(x.Value) && fileLocation.StartsWith(x.Value));
-            string packageName = packageMapEntry.Key;
-
-            // package doesn't exist, likely mistakenly placed file
-            if (String.IsNullOrEmpty(packageName))
-            {
-                App.Logger.WriteLine(LOG_IDENT, $"{fileLocation} was removed as a mod but does not belong to a package");
-
-                string versionFileLocation = Path.Combine(AppData.Directory, fileLocation);
-
-                if (File.Exists(versionFileLocation))
-                    File.Delete(versionFileLocation);
-
-                continue;
-            }
-
-            string fileName = fileLocation.Substring(packageMapEntry.Value.Length);
-
-            if (!fileRestoreMap.ContainsKey(packageName))
-                fileRestoreMap[packageName] = new();
-
-            fileRestoreMap[packageName].Add(fileName);
-
-            App.Logger.WriteLine(LOG_IDENT, $"{fileLocation} was removed as a mod, restoring from {packageName}");
-        }
-
-        foreach (var entry in fileRestoreMap)
-        {
-            var package = _versionPackageManifest.Find(x => x.Name == entry.Key);
-
-            if (package is not null)
-            {
-                if (_cancelTokenSource.IsCancellationRequested)
-                    return;
-
-                await DownloadPackage(package);
-                ExtractPackage(package, entry.Value);
-            }
-        }
-
-        App.State.Prop.ModManifest = modFolderFiles;
-        App.State.Save();
-
-        App.Logger.WriteLine(LOG_IDENT, $"Finished checking file mods");
-    }
-
-    private async Task DownloadPackage(Package package)
-    {
-        string LOG_IDENT = $"Bootstrapper::DownloadPackage.{package.Name}";
-            
-        if (_cancelTokenSource.IsCancellationRequested)
-            return;
+            Directory.CreateDirectory(Paths.Downloads);
 
             string packageUrl = Deployment.GetLocation($"/{_latestVersionGuid}-{package.Name}");
             string robloxPackageLocation = Path.Combine(Paths.LocalAppData, "Roblox", "Downloads", package.Signature);
@@ -1072,7 +1228,11 @@ public class Bootstrapper
 
             int totalBytesRead = 0;
 
-            try
+            App.Logger.WriteLine(LOG_IDENT, "Downloading...");
+
+            var buffer = new byte[4096];
+
+            for (int i = 1; i <= maxTries; i++)
             {
                 var response = await App.HttpClient.GetAsync(packageUrl, HttpCompletionOption.ResponseHeadersRead, _cancelTokenSource.Token);
                 await using var stream = await response.Content.ReadAsStreamAsync(_cancelTokenSource.Token);
@@ -1117,7 +1277,12 @@ public class Bootstrapper
 
                 if (ex.GetType() == typeof(ChecksumFailedException))
                 {
-                    App.SendStat("packageDownloadState", "httpFail");
+                    App.Logger.WriteLine(LOG_IDENT, $"An exception occurred after downloading {totalBytesRead} bytes. ({i}/{maxTries})");
+                    App.Logger.WriteException(LOG_IDENT, ex);
+
+                    if (ex.GetType() == typeof(ChecksumFailedException))
+                    {
+                        App.SendStat("packageDownloadState", "httpFail");
 
                         Frontend.ShowConnectivityDialog(
                             Strings.Dialog_Connectivity_UnableToDownload,
@@ -1137,20 +1302,53 @@ public class Bootstrapper
                 _totalDownloadedBytes -= totalBytesRead;
                 UpdateProgressBar();
 
-                // attempt download over HTTP
-                // this isn't actually that unsafe - signatures were fetched earlier over HTTPS
-                // so we've already established that our signatures are legit, and that there's very likely no MITM anyway
-                if (ex.GetType() == typeof(IOException) && !packageUrl.StartsWith("http://"))
-                {
-                    App.Logger.WriteLine(LOG_IDENT, "Retrying download over HTTP...");
-                    packageUrl = packageUrl.Replace("https://", "http://");
-                    statIsHttp = true;
+                    // attempt download over HTTP
+                    // this isn't actually that unsafe - signatures were fetched earlier over HTTPS
+                    // so we've already established that our signatures are legit, and that there's very likely no MITM anyway
+                    if (ex.GetType() == typeof(IOException) && !packageUrl.StartsWith("http://"))
+                    {
+                        App.Logger.WriteLine(LOG_IDENT, "Retrying download over HTTP...");
+                        packageUrl = packageUrl.Replace("https://", "http://");
+                    }
                 }
             }
         }
 
-        if (statIsRetrying)
-            App.SendStat("packageDownloadState", statIsHttp ? "httpSuccess" : "retrySuccess");
+        private void ExtractPackage(Package package, List<string>? files = null)
+        {
+            const string LOG_IDENT = "Bootstrapper::ExtractPackage";
+
+            string? packageDir = AppData.PackageDirectoryMap.GetValueOrDefault(package.Name);
+
+            if (packageDir is null)
+            {
+                App.Logger.WriteLine(LOG_IDENT, $"WARNING: {package.Name} was not found in the package map!");
+                return;
+            }
+
+            string packageFolder = Path.Combine(AppData.Directory, packageDir);
+            string? fileFilter = null;
+
+            // for sharpziplib, each file in the filter needs to be a regex
+            if (files is not null)
+            {
+                var regexList = new List<string>();
+
+                foreach (string file in files)
+                    regexList.Add("^" + file.Replace("\\", "\\\\") + "$");
+
+                fileFilter = String.Join(';', regexList);
+            }
+
+            App.Logger.WriteLine(LOG_IDENT, $"Extracting {package.Name}...");
+
+            var fastZip = new FastZip(_fastZipEvents);
+
+            fastZip.ExtractZip(package.DownloadPath, packageFolder, fileFilter);
+
+            App.Logger.WriteLine(LOG_IDENT, $"Finished extracting {package.Name}");
+        }
+        #endregion
     }
 
     private void ExtractPackage(Package package, List<string>? files = null)
