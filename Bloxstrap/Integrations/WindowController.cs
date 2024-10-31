@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Drawing.Drawing2D;
@@ -117,6 +117,13 @@ namespace Bloxstrap.Integrations
 
             App.Logger.WriteLine(LOG_IDENT, $"Monitor X:{monitorX} Y:{monitorY} W:{screenWidth} H:{screenHeight}");
             App.Logger.WriteLine(LOG_IDENT, $"Window X:{_lastX} Y:{_lastY} W:{_lastWidth} H:{_lastHeight}");
+
+            appTheme = ThemeEx.GetFinal(App.Settings.Prop.Theme);
+            if (App.Settings.Prop.CanGameChangeColor && appTheme == Theme.Dark)
+            {
+                _lastWindowCaptionColor = Convert.ToUInt32("1F1F1F", 16);
+                DwmSetWindowAttribute(_currentWindow, 35, ref _lastWindowCaptionColor, sizeof(int));
+            }
         }
 
         public void stopWindow() {
@@ -140,27 +147,6 @@ namespace Bloxstrap.Integrations
             _startingWidth = _lastWidth;
             _startingHeight = _lastHeight;
 
-            appTheme = ThemeEx.GetFinal(App.Settings.Prop.Theme);
-            if (App.Settings.Prop.CanGameChangeColor && appTheme == Theme.Dark)
-            {
-                _lastWindowCaptionColor = Convert.ToUInt32("1F1F1F", 16);
-                DwmSetWindowAttribute(_currentWindow, 35, ref _lastWindowCaptionColor, sizeof(int));
-            }
-            
-            //dpi awareness
-            using (Graphics graphics = Graphics.FromHwnd(_currentWindow))
-            {
-                screenSizeX *= graphics.DpiX / 96;
-                screenSizeY *= graphics.DpiY / 96;
-            }
-            
-            App.Logger.WriteLine("WindowController::onWindowFound", $"WinSize X:{_lastX} Y:{_lastY} W:{_lastWidth} H:{_lastHeight} sW:{screenSizeX} sH:{screenSizeY}");
-
-            _activityWatcher.OnAppClose += delegate
-            {
-                App.Logger.WriteLine("WindowController", "User is back into the desktop app, resetting window");
-                resetWindow();
-            };
             updateWinMonitor();
         }
 
@@ -214,6 +200,7 @@ namespace Bloxstrap.Integrations
         }
 
         public void OnMessage(Message message) {
+            const string LOG_IDENT = "WindowController::OnMessage";
             // try to find window now
             if (!_foundWindow) {
                 _currentWindow = _FindWindow("Roblox");

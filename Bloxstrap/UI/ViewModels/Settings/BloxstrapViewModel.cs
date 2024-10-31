@@ -1,4 +1,4 @@
-﻿using System.Windows.Input;
+﻿﻿using System.Windows.Input;
 using CommunityToolkit.Mvvm.Input;
 using ICSharpCode.SharpZipLib.Zip;
 using Microsoft.Win32;
@@ -86,11 +86,5 @@ namespace Bloxstrap.UI.ViewModels.Settings
                 fileStream.CopyTo(zipStream);
             }
         }
-    }
-
-    public bool AnalyticsEnabled
-    {
-        get => App.Settings.Prop.EnableAnalytics;
-        set => App.Settings.Prop.EnableAnalytics = value;
     }
 }

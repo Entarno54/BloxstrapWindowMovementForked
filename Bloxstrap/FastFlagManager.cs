@@ -1,47 +1,47 @@
-﻿using Bloxstrap.Enums.FlagPresets;
+﻿﻿using Bloxstrap.Enums.FlagPresets;
 
-namespace Bloxstrap;
-
-public class FastFlagManager : JsonManager<Dictionary<string, object>>
+namespace Bloxstrap
 {
-    public override string ClassName => nameof(FastFlagManager);
-
-    public override string LOG_IDENT_CLASS => ClassName;
-        
-    public bool allowDetection = true;
-    public override string FileLocation => Path.Combine(Paths.Modifications, "ClientSettings\\ClientAppSettings.json");
-
-    public bool Changed => !OriginalProp.SequenceEqual(Prop);
-
-    public static IReadOnlyDictionary<string, string> PresetFlags = new Dictionary<string, string>
+    public class FastFlagManager : JsonManager<Dictionary<string, object>>
     {
-        { "Bloxstrap", "FFlagUserIsBloxstrap"},
-        { "WindowMovement", "FFlagUserAllowsWindowMovement"},
+        public override string ClassName => nameof(FastFlagManager);
 
-        { "Network.Log", "FLogNetwork" },
+        public override string LOG_IDENT_CLASS => ClassName;
+        
+        public bool allowDetection = true;
+        public override string FileLocation => Path.Combine(Paths.Modifications, "ClientSettings\\ClientAppSettings.json");
 
-        { "Rendering.Framerate", "DFIntTaskSchedulerTargetFps" },
-        { "Rendering.ManualFullscreen", "FFlagHandleAltEnterFullscreenManually" },
-        { "Rendering.DisableScaling", "DFFlagDisableDPIScale" },
-        { "Rendering.MSAA", "FIntDebugForceMSAASamples" },
-        { "Rendering.DisablePostFX", "FFlagDisablePostFx" },
-        { "Rendering.ShadowIntensity", "FIntRenderShadowIntensity" },
+        public bool Changed => !OriginalProp.SequenceEqual(Prop);
 
-        { "Rendering.Mode.D3D11", "FFlagDebugGraphicsPreferD3D11" },
-        { "Rendering.Mode.D3D10", "FFlagDebugGraphicsPreferD3D11FL10" },
+        public static IReadOnlyDictionary<string, string> PresetFlags = new Dictionary<string, string>
+        {
+            { "Bloxstrap", "FFlagUserIsBloxstrap"},
+            { "WindowMovement", "FFlagUserAllowsWindowMovement"},
 
-        { "Rendering.Lighting.Voxel", "DFFlagDebugRenderForceTechnologyVoxel" },
-        { "Rendering.Lighting.ShadowMap", "FFlagDebugForceFutureIsBrightPhase2" },
-        { "Rendering.Lighting.Future", "FFlagDebugForceFutureIsBrightPhase3" },
+            { "Network.Log", "FLogNetwork" },
 
-        { "Rendering.TextureQuality.OverrideEnabled", "DFFlagTextureQualityOverrideEnabled" },
-        { "Rendering.TextureQuality.Level", "DFIntTextureQualityOverride" },
-        { "Rendering.TerrainTextureQuality", "FIntTerrainArraySliceSize" },
+            { "Rendering.Framerate", "DFIntTaskSchedulerTargetFps" },
+            { "Rendering.ManualFullscreen", "FFlagHandleAltEnterFullscreenManually" },
+            { "Rendering.DisableScaling", "DFFlagDisableDPIScale" },
+            { "Rendering.MSAA", "FIntDebugForceMSAASamples" },
+            { "Rendering.DisablePostFX", "FFlagDisablePostFx" },
+            { "Rendering.ShadowIntensity", "FIntRenderShadowIntensity" },
 
-        { "UI.Hide", "DFIntCanHideGuiGroupId" },
-        { "UI.FontSize", "FIntFontSizePadding" },
+            { "Rendering.Mode.D3D11", "FFlagDebugGraphicsPreferD3D11" },
+            { "Rendering.Mode.D3D10", "FFlagDebugGraphicsPreferD3D11FL10" },
 
-        { "UI.FullscreenTitlebarDelay", "FIntFullscreenTitleBarTriggerDelayMillis" },
+            { "Rendering.Lighting.Voxel", "DFFlagDebugRenderForceTechnologyVoxel" },
+            { "Rendering.Lighting.ShadowMap", "FFlagDebugForceFutureIsBrightPhase2" },
+            { "Rendering.Lighting.Future", "FFlagDebugForceFutureIsBrightPhase3" },
+
+            { "Rendering.TextureQuality.OverrideEnabled", "DFFlagTextureQualityOverrideEnabled" },
+            { "Rendering.TextureQuality.Level", "DFIntTextureQualityOverride" },
+            { "Rendering.TerrainTextureQuality", "FIntTerrainArraySliceSize" },
+
+            { "UI.Hide", "DFIntCanHideGuiGroupId" },
+            { "UI.FontSize", "FIntFontSizePadding" },
+
+            { "UI.FullscreenTitlebarDelay", "FIntFullscreenTitleBarTriggerDelayMillis" },
             
             //{ "UI.Menu.Style.V2Rollout", "FIntNewInGameMenuPercentRollout3" },
             //{ "UI.Menu.Style.EnableV4.1", "FFlagEnableInGameMenuControls" },
@@ -153,80 +153,75 @@ public class FastFlagManager : JsonManager<Dictionary<string, object>>
         //    }
         //};
 
+        // all fflags are stored as strings
+        // to delete a flag, set the value as null
+        public void SetValue(string key, object? value)
         {
-            InGameMenuVersion.V1,
-            new Dictionary<string, string?>
+            const string LOG_IDENT = "FastFlagManager::SetValue";
+
+            if (value is null)
             {
-                { "V2Rollout", "0" },
-                { "EnableV4", "False" },
-                { "EnableV4Chrome", "False" },
-                { "ABTest", "False" },
-                { "ReportButtonCutOff", "False" }
-            }
-        },
+                if (Prop.ContainsKey(key))
+                    App.Logger.WriteLine(LOG_IDENT, $"Deletion of '{key}' is pending");
 
-        {
-            InGameMenuVersion.V2,
-            new Dictionary<string, string?>
-            {
-                { "V2Rollout", "100" },
-                { "EnableV4", "False" },
-                { "EnableV4Chrome", "False" },
-                { "ABTest", "False" },
-                { "ReportButtonCutOff", null }
-            }
-        },
-
-        {
-            InGameMenuVersion.V4,
-            new Dictionary<string, string?>
-            {
-                { "V2Rollout", "0" },
-                { "EnableV4", "True" },
-                { "EnableV4Chrome", "False" },
-                { "ABTest", "False" },
-                { "ReportButtonCutOff", null }
-            }
-        },
-
-        {
-            InGameMenuVersion.V4Chrome,
-            new Dictionary<string, string?>
-            {
-                { "V2Rollout", "0" },
-                { "EnableV4", "True" },
-                { "EnableV4Chrome", "True" },
-                { "ABTest", "False" },
-                { "ReportButtonCutOff", null }
-            }
-        }
-    };
-
-    // all fflags are stored as strings
-    // to delete a flag, set the value as null
-    public void SetValue(string key, object? value)
-    {
-        const string LOG_IDENT = "FastFlagManager::SetValue";
-
-        if (value is null)
-        {
-            if (Prop.ContainsKey(key))
-                App.Logger.WriteLine(LOG_IDENT, $"Deletion of '{key}' is pending");
-
-            Prop.Remove(key);
-        }
-        else
-        {
-            if (Prop.ContainsKey(key))
-            {
-                if (key == Prop[key].ToString())
-                    return;
-
-                App.Logger.WriteLine(LOG_IDENT, $"Changing of '{key}' from '{Prop[key]}' to '{value}' is pending");
+                Prop.Remove(key);
             }
             else
             {
-                App.Logger.WriteLine(LOG_IDENT, $"Setting of '{key}' to '{value}' is pending");
+                if (Prop.ContainsKey(key))
+                {
+                    if (key == Prop[key].ToString())
+                        return;
+
+                    App.Logger.WriteLine(LOG_IDENT, $"Changing of '{key}' from '{Prop[key]}' to '{value}' is pending");
+                }
+                else
+                {
+                    App.Logger.WriteLine(LOG_IDENT, $"Setting of '{key}' to '{value}' is pending");
+                }
+
+                Prop[key] = value.ToString()!;
+            }
+        }
+
+        // this returns null if the fflag doesn't exist
+        public string? GetValue(string key)
+        {
+            // check if we have an updated change for it pushed first
+            if (Prop.TryGetValue(key, out object? value) && value is not null)
+                return value.ToString();
+
+            return null;
+        }
+
+        public void SetPreset(string prefix, object? value)
+        {
+            foreach (var pair in PresetFlags.Where(x => x.Key.StartsWith(prefix)))
+                SetValue(pair.Value, value);
+        }
+
+        public void SetPresetEnum(string prefix, string target, object? value)
+        {
+            foreach (var pair in PresetFlags.Where(x => x.Key.StartsWith(prefix)))
+            {
+                if (pair.Key.StartsWith($"{prefix}.{target}"))
+                    SetValue(pair.Value, value);
+                else
+                    SetValue(pair.Value, null);
+            }
+        }
+
+        public string? GetPreset(string name) => GetValue(PresetFlags[name]);
+
+        public T GetPresetEnum<T>(IReadOnlyDictionary<T, string> mapping, string prefix, string value) where T : Enum
+        {
+            foreach (var pair in mapping)
+            {
+                if (pair.Value == "None")
+                    continue;
+
+                if (GetPreset($"{prefix}.{pair.Value}") == value)
+                    return pair.Key;
             }
 
             return mapping.First().Key;
@@ -266,81 +261,5 @@ public class FastFlagManager : JsonManager<Dictionary<string, object>>
             if (GetPreset("Rendering.ManualFullscreen") != "False")
                 SetPreset("Rendering.ManualFullscreen", "False");
         }
-    }
-
-    // this returns null if the fflag doesn't exist
-    public string? GetValue(string key)
-    {
-        // check if we have an updated change for it pushed first
-        if (Prop.TryGetValue(key, out object? value) && value is not null)
-            return value.ToString();
-
-        return null;
-    }
-
-    public void SetPreset(string prefix, object? value)
-    {
-        foreach (var pair in PresetFlags.Where(x => x.Key.StartsWith(prefix)))
-            SetValue(pair.Value, value);
-    }
-
-    public void SetPresetEnum(string prefix, string target, object? value)
-    {
-        foreach (var pair in PresetFlags.Where(x => x.Key.StartsWith(prefix)))
-        {
-            if (pair.Key.StartsWith($"{prefix}.{target}"))
-                SetValue(pair.Value, value);
-            else
-                SetValue(pair.Value, null);
-        }
-    }
-
-    public string? GetPreset(string name) => GetValue(PresetFlags[name]);
-
-    public T GetPresetEnum<T>(IReadOnlyDictionary<T, string> mapping, string prefix, string value) where T : Enum
-    {
-        foreach (var pair in mapping)
-        {
-            if (pair.Value == "None")
-                continue;
-
-            if (GetPreset($"{prefix}.{pair.Value}") == value)
-                return pair.Key;
-        }
-
-        return mapping.First().Key;
-    }
-
-    public override void Save()
-    {
-        // convert all flag values to strings before saving
-
-        foreach (var pair in Prop)
-            Prop[pair.Key] = pair.Value.ToString()!;
-
-        base.Save();
-
-        // clone the dictionary
-        OriginalProp = new(Prop);
-    }
-
-    public override void Load(bool alertFailure = true)
-    {
-        base.Load(alertFailure);
-
-        // clone the dictionary
-        OriginalProp = new(Prop);
-
-        // todo: tracking settings?
-
-        // fflag for detecting if bloxstrap is being used (may remove later)
-        SetPreset("Bloxstrap", allowDetection ? true : null);
-
-        // fflag for detecting if window movement is allowed in order to prevent log bloat when disabled
-        SetPreset("WindowMovement", (App.Settings.Prop.CanGameMoveWindow & allowDetection) ? true : null);
-
-        // TODO - remove when activity tracking has been revamped
-        if (GetPreset("Network.Log") != "7")
-            SetPreset("Network.Log", "7");
     }
 }

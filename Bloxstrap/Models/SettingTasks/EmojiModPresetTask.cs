@@ -1,45 +1,47 @@
-﻿using System.Windows;
+﻿﻿using System.Windows;
 
-namespace Bloxstrap.Models.SettingTasks;
+using Bloxstrap.Models.SettingTasks.Base;
 
-public class EmojiModPresetTask : EnumBaseTask<EmojiType>
+namespace Bloxstrap.Models.SettingTasks
 {
-    private string _filePath => Path.Combine(Paths.Modifications, @"content\fonts\TwemojiMozilla.ttf");
-
-    private IEnumerable<KeyValuePair<EmojiType, string>>? QueryCurrentValue()
+    public class EmojiModPresetTask : EnumBaseTask<EmojiType>
     {
-        if (!File.Exists(_filePath))
-            return null;
+        private string _filePath => Path.Combine(Paths.Modifications, @"content\fonts\TwemojiMozilla.ttf");
 
-        using var fileStream = File.OpenRead(_filePath);
-        string hash = MD5Hash.Stringify(App.MD5Provider.ComputeHash(fileStream));
-
-        return EmojiTypeEx.Hashes.Where(x => x.Value == hash);
-    }
-
-    public EmojiModPresetTask() : base("ModPreset", "EmojiFont")
-    {
-        var query = QueryCurrentValue();
-
-        if (query is not null)
-            OriginalState = query.FirstOrDefault().Key;
-    }
-
-    public override async void Execute()
-    {
-        const string LOG_IDENT = "EmojiModPresetTask::Execute";
-
-        var query = QueryCurrentValue();
-
-        if (NewState != EmojiType.Default && (query is null || query.FirstOrDefault().Key != NewState))
+        private IEnumerable<KeyValuePair<EmojiType, string>>? QueryCurrentValue()
         {
-            try
+            if (!File.Exists(_filePath))
+                return null;
+
+            using var fileStream = File.OpenRead(_filePath);
+            string hash = MD5Hash.Stringify(App.MD5Provider.ComputeHash(fileStream));
+
+            return EmojiTypeEx.Hashes.Where(x => x.Value == hash);
+        }
+
+        public EmojiModPresetTask() : base("ModPreset", "EmojiFont")
+        {
+            var query = QueryCurrentValue();
+
+            if (query is not null)
+                OriginalState = query.FirstOrDefault().Key;
+        }
+
+        public override async void Execute()
+        {
+            const string LOG_IDENT = "EmojiModPresetTask::Execute";
+
+            var query = QueryCurrentValue();
+
+            if (NewState != EmojiType.Default && (query is null || query.FirstOrDefault().Key != NewState))
             {
-                var response = await App.HttpClient.GetAsync(NewState.GetUrl());
+                try
+                {
+                    var response = await App.HttpClient.GetAsync(NewState.GetUrl());
 
-                response.EnsureSuccessStatusCode();
+                    response.EnsureSuccessStatusCode();
 
-                Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
+                    Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
 
                     await using var fileStream = new FileStream(_filePath, FileMode.Create);
                     await response.Content.CopyToAsync(fileStream);
@@ -65,24 +67,6 @@ public class EmojiModPresetTask : EnumBaseTask<EmojiType>
 
                 OriginalState = NewState;
             }
-            catch (Exception ex)
-            {
-                App.Logger.WriteException(LOG_IDENT, ex);
-
-                Frontend.ShowConnectivityDialog(
-                    String.Format(Strings.Dialog_Connectivity_UnableToConnect, "GitHub"),
-                    $"{Strings.Menu_Mods_Presets_EmojiType_Error}\n\n{Strings.Dialog_Connectivity_TryAgainLater}",
-                    MessageBoxImage.Warning,
-                    ex
-                );
-            }
-        }
-        else if (query is not null && query.Any())
-        {
-            Filesystem.AssertReadOnly(_filePath);
-            File.Delete(_filePath);
-
-            OriginalState = NewState;
         }
     }
 }
