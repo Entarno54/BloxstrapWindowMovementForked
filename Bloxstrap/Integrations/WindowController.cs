@@ -286,7 +286,7 @@ namespace Bloxstrap.Integrations
                         App.Logger.WriteLine(LOG_IDENT, "Failed to parse message! (JSON deserialization returned null)");
                         return;
                     }
-
+                     App.Logger.WriteLine(LOG_IDENT, ToString(windowData.Transparency) + ToString(windowData.Color));
                     if (windowData.Transparency is not null) {
                         _lastTransparency = (byte) windowData.Transparency;
                     }
